@@ -8,12 +8,16 @@ const prisma = new PrismaClient({
     : ['error'],
 });
 
-// Холболт шалгах
 prisma.$connect()
-  .then(() => logger.info('✅ PostgreSQL connected via Prisma'))
+  .then(() => logger.info('PostgreSQL connected via Prisma'))
   .catch((err) => {
-    logger.error('❌ Database connection failed:', err);
-    process.exit(1);
+    logger.error('Database connection failed:', err);
+
+    if (process.env.NODE_ENV === 'production') {
+      process.exit(1);
+    }
+
+    logger.warn('Database is unavailable, but the API will keep running in development.');
   });
 
 module.exports = prisma;

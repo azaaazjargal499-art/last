@@ -11,8 +11,38 @@ const generateToken = (id) => {
   });
 };
 
-const getFrontendUrl = () => process.env.FRONTEND_URL;
-const getBackendUrl = () => process.env.BACKEND_URL;
+const DEFAULT_FRONTEND_URL = 'http://localhost:3001';
+
+const normalizeOrigin = (value) => {
+  try {
+    return new URL(value).origin;
+  } catch {
+    return null;
+  }
+};
+
+const getAllowedFrontendOrigins = () => [
+  process.env.FRONTEND_URL,
+  ...(process.env.CORS_ORIGIN || '').split(','),
+  'http://localhost:3000',
+  DEFAULT_FRONTEND_URL,
+]
+  .map((origin) => origin?.trim())
+  .filter(Boolean);
+
+const getFrontendUrl = (req, preferredUrl) => {
+  const allowedOrigins = getAllowedFrontendOrigins();
+  const candidates = [
+    preferredUrl,
+    req.get('referer') ? normalizeOrigin(req.get('referer')) : null,
+    process.env.FRONTEND_URL,
+    DEFAULT_FRONTEND_URL,
+  ];
+
+  return candidates.find((url) => url && allowedOrigins.includes(normalizeOrigin(url))) || DEFAULT_FRONTEND_URL;
+};
+
+const getBackendUrl = (req) => process.env.BACKEND_URL || `${req.protocol}://${req.get('host')}`;
 
 const buildUniqueUsername = async (email, name) => {
   const base = (name || email.split('@')[0] || 'google_user')
@@ -98,13 +128,14 @@ const googleStart = (req, res) => {
     return res.status(503).json({ error: 'Google OAuth client ID тохируулагдаагүй байна.' });
   }
 
-  const redirectUri = `${getBackendUrl()}/api/auth/google/callback`;
+  const redirectUri = `${getBackendUrl(req)}/api/auth/google/callback`;
   const params = new URLSearchParams({
     client_id: GOOGLE_CLIENT_ID,
     redirect_uri: redirectUri,
     response_type: 'code',
     scope: 'openid email profile',
     prompt: 'select_account',
+    state: getFrontendUrl(req),
   });
 
   res.redirect(`https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`);
@@ -114,7 +145,7 @@ const googleStart = (req, res) => {
 const googleCallback = async (req, res, next) => {
   try {
     const { code, error } = req.query;
-    const frontendUrl = getFrontendUrl();
+    const frontendUrl = getFrontendUrl(req, req.query.state);
 
     if (error) {
       return res.redirect(`${frontendUrl}/auth?google_error=${encodeURIComponent(error)}`);
@@ -129,7 +160,7 @@ const googleCallback = async (req, res, next) => {
       return res.redirect(`${frontendUrl}/auth?google_error=${encodeURIComponent('Google OAuth тохиргоо дутуу байна.')}`);
     }
 
-    const redirectUri = `${getBackendUrl()}/api/auth/google/callback`;
+    const redirectUri = `${getBackendUrl(req)}/api/auth/google/callback`;
     const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
