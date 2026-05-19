@@ -47,3 +47,9 @@ export const authService = {
   getMe:    ()     => api.get('/auth/me').then(r => r.data),
   update:   (data) => api.put('/auth/profile', data).then(r => r.data),
 };
+
+export const adminService = {
+  getOverview: () => api.get('/admin/overview').then(r => r.data),
+  getUsers: (params) => api.get('/admin/users', { params }).then(r => r.data),
+  updateUser: (id, data) => api.patch(`/admin/users/${id}`, data).then(r => r.data),
+};

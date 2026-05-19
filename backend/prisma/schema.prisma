@@ -15,6 +15,7 @@ model User {
   email         String    @unique
   username      String    @unique
   password      String
+  role          UserRole  @default(USER)
   balance       Float     @default(10000)   // Нийт баланс USD
   riskPerTrade  Float     @default(2)       // Нэг арилжааны эрсдэл %
   subscription  Subscription?
@@ -180,4 +181,9 @@ enum SubscriptionStatus {
 enum AIAnalysisType {
   TRADE_ANALYSIS    // Арилжааны шинжилгээ
   CHART_ANALYSIS    // Чартын шинжилгээ
+}
+
+enum UserRole {
+  USER
+  ADMIN
 }

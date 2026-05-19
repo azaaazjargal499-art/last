@@ -20,6 +20,8 @@ services:
         generateValue: true
       - key: JWT_EXPIRES_IN
         value: 7d
+      - key: ADMIN_EMAILS
+        sync: false
       - key: CORS_ORIGIN
         value: https://smart-inventory-web.onrender.com
       - key: FRONTEND_URL

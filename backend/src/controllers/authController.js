@@ -2,6 +2,7 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const prisma = require('../config/database');
+const { withEffectiveRole } = require('../middleware/auth');
 
 // ─── Token үүсгэх ─────────────────────────────────────────────────
 const generateToken = (id) => {
@@ -10,8 +11,8 @@ const generateToken = (id) => {
   });
 };
 
-const getFrontendUrl = () => process.env.FRONTEND_URL || 'http://localhost:3001';
-const getBackendUrl = () => process.env.BACKEND_URL || `http://localhost:${process.env.PORT || 5000}`;
+const getFrontendUrl = () => process.env.FRONTEND_URL;
+const getBackendUrl = () => process.env.BACKEND_URL;
 
 const buildUniqueUsername = async (email, name) => {
   const base = (name || email.split('@')[0] || 'google_user')
@@ -49,12 +50,12 @@ const register = async (req, res, next) => {
 
     const user = await prisma.user.create({
       data: { email, username, password: hashedPassword, balance: parseFloat(balance) },
-      select: { id: true, email: true, username: true, balance: true, riskPerTrade: true, createdAt: true },
+      select: { id: true, email: true, username: true, role: true, balance: true, riskPerTrade: true, createdAt: true },
     });
 
     res.status(201).json({
       message: 'Бүртгэл амжилттай!',
-      user,
+      user: withEffectiveRole(user),
       token: generateToken(user.id),
     });
   } catch (error) {
@@ -81,7 +82,7 @@ const login = async (req, res, next) => {
 
     res.json({
       message: 'Амжилттай нэвтэрлээ!',
-      user: userData,
+      user: withEffectiveRole(userData),
       token: generateToken(user.id),
     });
   } catch (error) {
@@ -188,12 +189,12 @@ const getProfile = async (req, res, next) => {
     const user = await prisma.user.findUnique({
       where: { id: req.user.id },
       select: {
-        id: true, email: true, username: true,
+        id: true, email: true, username: true, role: true,
         balance: true, riskPerTrade: true, createdAt: true,
         _count: { select: { trades: true, alerts: true, strategies: true } },
       },
     });
-    res.json(user);
+    res.json(withEffectiveRole(user));
   } catch (error) {
     next(error);
   }
@@ -210,10 +211,10 @@ const updateProfile = async (req, res, next) => {
         ...(balance !== undefined && { balance: parseFloat(balance) }),
         ...(riskPerTrade !== undefined && { riskPerTrade: parseFloat(riskPerTrade) }),
       },
-      select: { id: true, email: true, username: true, balance: true, riskPerTrade: true },
+      select: { id: true, email: true, username: true, role: true, balance: true, riskPerTrade: true },
     });
 
-    res.json({ message: 'Профайл шинэчлэгдлээ', user });
+    res.json({ message: 'Профайл шинэчлэгдлээ', user: withEffectiveRole(user) });
   } catch (error) {
     next(error);
   }

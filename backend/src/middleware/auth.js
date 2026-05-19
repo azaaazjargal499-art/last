@@ -2,6 +2,17 @@
 const jwt = require('jsonwebtoken');
 const prisma = require('../config/database');
 
+const getAdminEmails = () => (process.env.ADMIN_EMAILS || '')
+  .split(',')
+  .map(email => email.trim().toLowerCase())
+  .filter(Boolean);
+
+const withEffectiveRole = (user) => {
+  if (!user) return user;
+  const isConfiguredAdmin = getAdminEmails().includes(user.email.toLowerCase());
+  return { ...user, role: isConfiguredAdmin ? 'ADMIN' : user.role };
+};
+
 const protect = async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
@@ -15,14 +26,14 @@ const protect = async (req, res, next) => {
 
     const user = await prisma.user.findUnique({
       where: { id: decoded.id },
-      select: { id: true, email: true, username: true, balance: true, riskPerTrade: true },
+      select: { id: true, email: true, username: true, role: true, balance: true, riskPerTrade: true },
     });
 
     if (!user) {
       return res.status(401).json({ error: 'Хэрэглэгч олдсонгүй.' });
     }
 
-    req.user = user;
+    req.user = withEffectiveRole(user);
     next();
   } catch (error) {
     if (error.name === 'JsonWebTokenError') {
@@ -35,4 +46,11 @@ const protect = async (req, res, next) => {
   }
 };
 
-module.exports = { protect };
+const requireAdmin = (req, res, next) => {
+  if (req.user?.role !== 'ADMIN') {
+    return res.status(403).json({ error: 'Admin эрх шаардлагатай.' });
+  }
+  next();
+};
+
+module.exports = { protect, requireAdmin, withEffectiveRole };

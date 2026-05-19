@@ -13,6 +13,7 @@ import RiskMgmt  from '@/pages/RiskManagement';
 import Alerts    from '@/pages/Alerts';
 import Strategies from '@/pages/Strategies';
 import Settings  from '@/pages/Settings';
+import Admin     from '@/pages/Admin';
 
 // Layout
 import Layout from '@/components/common/Layout';
@@ -27,6 +28,11 @@ const ProtectedRoute = ({ children }) => {
 const PublicRoute = ({ children }) => {
   const { token } = useAuthStore();
   return !token ? children : <Navigate to="/dashboard" replace />;
+};
+
+const AdminRoute = ({ children }) => {
+  const { user } = useAuthStore();
+  return user?.role === 'ADMIN' ? children : <Navigate to="/dashboard" replace />;
 };
 
 export default function App() {
@@ -52,6 +58,7 @@ export default function App() {
         <Route path="alerts" element={<Alerts />} />
         <Route path="strategies" element={<Strategies />} />
         <Route path="settings" element={<Settings />} />
+        <Route path="admin" element={<AdminRoute><Admin /></AdminRoute>} />
       </Route>
 
       {/* Fallback */}

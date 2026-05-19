@@ -18,6 +18,7 @@ const riskRoutes      = require('./routes/risk');
 const analyticsRoutes = require('./routes/analytics');
 const strategyRoutes  = require('./routes/strategies');
 const aiRoutes        = require('./routes/ai');
+const adminRoutes     = require('./routes/admin');
 
 const app = express();
 
@@ -66,6 +67,7 @@ app.use('/api/risk',       riskRoutes);
 app.use('/api/analytics',  analyticsRoutes);
 app.use('/api/strategies', strategyRoutes);
 app.use('/api/ai',         aiRoutes);
+app.use('/api/admin',      adminRoutes);
 
 // ─── Error Handling ────────────────────────────────────────────────
 app.use(notFound);

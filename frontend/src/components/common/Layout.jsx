@@ -9,6 +9,7 @@ import {
   LayoutDashboard,
   LogOut,
   Settings,
+  ShieldCheck,
   ShieldAlert,
   TrendingUp,
 } from 'lucide-react';
@@ -25,6 +26,8 @@ const navItems = [
   { to: '/dashboard/strategies', icon: BookOpen, label: 'Стратеги' },
   { to: '/dashboard/settings', icon: Settings, label: 'Тохиргоо' },
 ];
+
+const adminNavItem = { to: '/dashboard/admin', icon: ShieldCheck, label: 'Admin' };
 
 export default function Layout() {
   const { user, logout } = useAuthStore();
@@ -52,7 +55,7 @@ export default function Layout() {
         </div>
 
         <nav className="flex-1 space-y-1 overflow-y-auto px-4 pb-4">
-          {navItems.map(({ to, icon: Icon, label }) => (
+          {[...navItems, ...(user?.role === 'ADMIN' ? [adminNavItem] : [])].map(({ to, icon: Icon, label }) => (
             <NavLink
               key={to}
               to={to}
