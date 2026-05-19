@@ -34,8 +34,9 @@ services:
       - key: GOOGLE_CLIENT_SECRET
         sync: false
 
-  - type: static
+  - type: web
     name: smart-inventory-web
+    runtime: static
     rootDir: frontend
     buildCommand: npm ci && npm run build
     staticPublishPath: dist
