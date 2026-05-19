@@ -1,0 +1,222 @@
+// smart-inventory/backend/src/controllers/authController.js
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const prisma = require('../config/database');
+
+// ─── Token үүсгэх ─────────────────────────────────────────────────
+const generateToken = (id) => {
+  return jwt.sign({ id }, process.env.JWT_SECRET, {
+    expiresIn: process.env.JWT_EXPIRES_IN || '7d',
+  });
+};
+
+const getFrontendUrl = () => process.env.FRONTEND_URL || 'http://localhost:3001';
+const getBackendUrl = () => process.env.BACKEND_URL || `http://localhost:${process.env.PORT || 5000}`;
+
+const buildUniqueUsername = async (email, name) => {
+  const base = (name || email.split('@')[0] || 'google_user')
+    .toLowerCase()
+    .replace(/[^a-z0-9_]/g, '_')
+    .replace(/_+/g, '_')
+    .replace(/^_|_$/g, '')
+    .slice(0, 24) || 'google_user';
+
+  let username = base;
+  let suffix = 1;
+
+  while (await prisma.user.findUnique({ where: { username } })) {
+    username = `${base}_${suffix}`;
+    suffix += 1;
+  }
+
+  return username;
+};
+
+// ─── POST /api/auth/register ───────────────────────────────────────
+const register = async (req, res, next) => {
+  try {
+    const { email, username, password, balance = 10000 } = req.body;
+
+    // Давхардал шалгах
+    const exists = await prisma.user.findFirst({
+      where: { OR: [{ email }, { username }] },
+    });
+    if (exists) {
+      return res.status(409).json({ error: 'Email эсвэл хэрэглэгчийн нэр аль хэдийн бүртгэлтэй байна.' });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 12);
+
+    const user = await prisma.user.create({
+      data: { email, username, password: hashedPassword, balance: parseFloat(balance) },
+      select: { id: true, email: true, username: true, balance: true, riskPerTrade: true, createdAt: true },
+    });
+
+    res.status(201).json({
+      message: 'Бүртгэл амжилттай!',
+      user,
+      token: generateToken(user.id),
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ─── POST /api/auth/login ──────────────────────────────────────────
+const login = async (req, res, next) => {
+  try {
+    const { email, password } = req.body;
+
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user) {
+      return res.status(401).json({ error: 'Email эсвэл нууц үг буруу байна.' });
+    }
+
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(401).json({ error: 'Email эсвэл нууц үг буруу байна.' });
+    }
+
+    const { password: _, ...userData } = user;
+
+    res.json({
+      message: 'Амжилттай нэвтэрлээ!',
+      user: userData,
+      token: generateToken(user.id),
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ─── GET /api/auth/google ─────────────────────────────────────────
+const googleStart = (req, res) => {
+  const { GOOGLE_CLIENT_ID } = process.env;
+
+  if (!GOOGLE_CLIENT_ID) {
+    return res.status(503).json({ error: 'Google OAuth client ID тохируулагдаагүй байна.' });
+  }
+
+  const redirectUri = `${getBackendUrl()}/api/auth/google/callback`;
+  const params = new URLSearchParams({
+    client_id: GOOGLE_CLIENT_ID,
+    redirect_uri: redirectUri,
+    response_type: 'code',
+    scope: 'openid email profile',
+    prompt: 'select_account',
+  });
+
+  res.redirect(`https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`);
+};
+
+// ─── GET /api/auth/google/callback ────────────────────────────────
+const googleCallback = async (req, res, next) => {
+  try {
+    const { code, error } = req.query;
+    const frontendUrl = getFrontendUrl();
+
+    if (error) {
+      return res.redirect(`${frontendUrl}/auth?google_error=${encodeURIComponent(error)}`);
+    }
+
+    if (!code) {
+      return res.redirect(`${frontendUrl}/auth?google_error=${encodeURIComponent('Google authorization code олдсонгүй.')}`);
+    }
+
+    const { GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET } = process.env;
+    if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
+      return res.redirect(`${frontendUrl}/auth?google_error=${encodeURIComponent('Google OAuth тохиргоо дутуу байна.')}`);
+    }
+
+    const redirectUri = `${getBackendUrl()}/api/auth/google/callback`;
+    const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        code,
+        client_id: GOOGLE_CLIENT_ID,
+        client_secret: GOOGLE_CLIENT_SECRET,
+        redirect_uri: redirectUri,
+        grant_type: 'authorization_code',
+      }),
+    });
+
+    if (!tokenResponse.ok) {
+      return res.redirect(`${frontendUrl}/auth?google_error=${encodeURIComponent('Google token авахад алдаа гарлаа.')}`);
+    }
+
+    const tokenData = await tokenResponse.json();
+    const profileResponse = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+      headers: { Authorization: `Bearer ${tokenData.access_token}` },
+    });
+
+    if (!profileResponse.ok) {
+      return res.redirect(`${frontendUrl}/auth?google_error=${encodeURIComponent('Google профайл авахад алдаа гарлаа.')}`);
+    }
+
+    const profile = await profileResponse.json();
+    if (!profile.email) {
+      return res.redirect(`${frontendUrl}/auth?google_error=${encodeURIComponent('Google email олдсонгүй.')}`);
+    }
+
+    let user = await prisma.user.findUnique({ where: { email: profile.email } });
+
+    if (!user) {
+      const username = await buildUniqueUsername(profile.email, profile.name);
+      const randomPassword = await bcrypt.hash(`${profile.sub}-${Date.now()}-${process.env.JWT_SECRET}`, 12);
+
+      user = await prisma.user.create({
+        data: {
+          email: profile.email,
+          username,
+          password: randomPassword,
+          balance: 10000,
+        },
+      });
+    }
+
+    const token = generateToken(user.id);
+    res.redirect(`${frontendUrl}/auth?token=${encodeURIComponent(token)}`);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ─── GET /api/auth/me ──────────────────────────────────────────────
+const getProfile = async (req, res, next) => {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: {
+        id: true, email: true, username: true,
+        balance: true, riskPerTrade: true, createdAt: true,
+        _count: { select: { trades: true, alerts: true, strategies: true } },
+      },
+    });
+    res.json(user);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ─── PUT /api/auth/profile ─────────────────────────────────────────
+const updateProfile = async (req, res, next) => {
+  try {
+    const { balance, riskPerTrade } = req.body;
+
+    const user = await prisma.user.update({
+      where: { id: req.user.id },
+      data: {
+        ...(balance !== undefined && { balance: parseFloat(balance) }),
+        ...(riskPerTrade !== undefined && { riskPerTrade: parseFloat(riskPerTrade) }),
+      },
+      select: { id: true, email: true, username: true, balance: true, riskPerTrade: true },
+    });
+
+    res.json({ message: 'Профайл шинэчлэгдлээ', user });
+  } catch (error) {
+    next(error);
+  }
+};
+
+module.exports = { register, login, googleStart, googleCallback, getProfile, updateProfile };

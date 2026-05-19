@@ -1,0 +1,183 @@
+// smart-inventory/backend/prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── User ──────────────────────────────────────────────────────────
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  username      String    @unique
+  password      String
+  balance       Float     @default(10000)   // Нийт баланс USD
+  riskPerTrade  Float     @default(2)       // Нэг арилжааны эрсдэл %
+  subscription  Subscription?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  trades        Trade[]
+  alerts        Alert[]
+  strategies    Strategy[]
+  aiAnalyses    AIAnalysis[]
+
+  @@map("users")
+}
+
+// ─── Trade (Арилжааны бүртгэл) ─────────────────────────────────────
+model Trade {
+  id            String      @id @default(uuid())
+  userId        String
+
+  pair          String      // e.g. "EUR/USD", "USD/JPY"
+  direction     Direction   // BUY | SELL
+  entryPrice    Float
+  exitPrice     Float?
+  lotSize       Float
+  stopLoss      Float?
+  takeProfit    Float?
+
+  openedAt      DateTime
+  closedAt      DateTime?
+  status        TradeStatus @default(OPEN)
+
+  pnl           Float?      // Ашиг алдагдал USD
+  pnlPercent    Float?      // Ашиг алдагдал %
+  commission    Float       @default(0)
+
+  strategyId    String?
+  notes         String?
+  entryReason   String?
+  imageUrl      String?
+
+  strategy      Strategy?   @relation(fields: [strategyId], references: [id])
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@map("trades")
+}
+
+// ─── Alert (Мэдэгдэл) ─────────────────────────────────────────────
+model Alert {
+  id            String      @id @default(uuid())
+  userId        String
+
+  pair          String
+  alertType     AlertType
+  targetPrice   Float
+  currentPrice  Float?
+  message       String?
+  isTriggered   Boolean     @default(false)
+  isActive      Boolean     @default(true)
+  triggeredAt   DateTime?
+
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@map("alerts")
+}
+
+// ─── Strategy (Стратеги) ───────────────────────────────────────────
+model Strategy {
+  id            String    @id @default(uuid())
+  userId        String
+
+  name          String
+  description   String?
+  rules         String?   // Арилжааны дүрмүүд
+  timeframe     String?   // M1, M5, H1, D1...
+  pairs         Json      // Ашигладаг валютын парууд
+
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  trades        Trade[]
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@map("strategies")
+}
+
+// ─── Subscription (AI захиалга) ─────────────────────────────────────
+model Subscription {
+  id            String            @id @default(uuid())
+  userId        String            @unique
+
+  plan          SubscriptionPlan
+  status        SubscriptionStatus @default(ACTIVE)
+  stripeId      String?           // Stripe subscription ID
+  currentPeriodStart DateTime?
+  currentPeriodEnd   DateTime?
+
+  user          User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  @@map("subscriptions")
+}
+
+// ─── AI Analysis (AI шинжилгээ) ─────────────────────────────────────
+model AIAnalysis {
+  id              String         @id @default(uuid())
+  userId          String
+
+  type            AIAnalysisType
+  title           String
+  content         String         @db.LongText
+  imageUrl String? @db.LongText
+  tradeIds        Json?
+  recommendations Json?
+
+  user            User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@map("ai_analyses")
+}
+
+// ─── Enums ─────────────────────────────────────────────────────────
+enum Direction {
+  BUY
+  SELL
+}
+
+enum TradeStatus {
+  OPEN
+  CLOSED
+  CANCELLED
+}
+
+enum AlertType {
+  PRICE_ABOVE    // Үнэ дээш гарахад
+  PRICE_BELOW    // Үнэ доош унахад
+  STOP_LOSS      // Stop loss хүрэхэд
+  TAKE_PROFIT    // Take profit хүрэхэд
+}
+
+enum SubscriptionPlan {
+  BASIC     // Сар бүр 10 шинжилгээ
+  PRO       // Сар бүр 50 шинжилгээ
+  PREMIUM   // Хязгааргүй шинжилгээ
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  CANCELLED
+  PAST_DUE
+  UNPAID
+}
+
+enum AIAnalysisType {
+  TRADE_ANALYSIS    // Арилжааны шинжилгээ
+  CHART_ANALYSIS    // Чартын шинжилгээ
+}

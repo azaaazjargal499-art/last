@@ -1,0 +1,75 @@
+version: '3.9'
+
+services:
+  # ─── PostgreSQL Database ───────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: smart_inventory_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER:-smartuser}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-smartpass}
+      POSTGRES_DB: ${DB_NAME:-smart_inventory}
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${DB_USER:-smartuser}']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - smart_network
+
+  # ─── Backend API (Node.js + Express) ─────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: smart_inventory_api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: development
+      PORT: 5000
+      DATABASE_URL: postgresql://${DB_USER:-smartuser}:${DB_PASSWORD:-smartpass}@postgres:5432/${DB_NAME:-smart_inventory}
+      JWT_SECRET: ${JWT_SECRET:-super_secret_jwt_key_change_in_production}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
+      CORS_ORIGIN: http://localhost:3000
+    ports:
+      - '5000:5000'
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    networks:
+      - smart_network
+    command: sh -c "npx prisma migrate deploy && npm run dev"
+
+  # ─── Frontend (React + Vite) ──────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: smart_inventory_web
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      VITE_API_URL: http://localhost:5000/api
+    ports:
+      - '3000:3000'
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    networks:
+      - smart_network
+
+volumes:
+  postgres_data:
+
+networks:
+  smart_network:
+    driver: bridge
