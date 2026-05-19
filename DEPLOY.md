@@ -5,11 +5,11 @@
 1. GitHub repo: `https://github.com/azaaazjargal499-art/trade`
 2. Render dashboard дээр `New` -> `Blueprint` сонгоно.
 3. Энэ repo-г connect хийнэ.
-4. Render `render.yaml` файлыг уншаад 2 resource үүсгэнэ:
+4. Render `render.yaml` файлыг уншаад 3 resource үүсгэнэ:
+   - `smart-inventory-db` PostgreSQL database
    - `smart-inventory-api` Node/Express API
    - `smart-inventory-web` React/Vite static frontend
-5. Secret дээр MySQL connection string болон API keys оруулна:
-   - `DATABASE_URL`
+5. Secret асуувал AI/Google login ашиглах values нэмнэ:
    - `GROQ_API_KEY`
    - `GOOGLE_CLIENT_ID`
    - `GOOGLE_CLIENT_SECRET`
@@ -22,15 +22,9 @@
 - Backend: `https://smart-inventory-api.onrender.com`
 - Health check: `https://smart-inventory-api.onrender.com/health`
 
-## MySQL database
+## Database
 
-Энэ project-ийн Prisma schema MySQL ашигладаг. Render Blueprint нь database үүсгэхгүй тул hosted MySQL database-ийн connection string-ийг `DATABASE_URL` дээр оруулна.
-
-Format:
-
-```bash
-mysql://USER:PASSWORD@HOST:PORT/DATABASE
-```
+Энэ deploy тохиргоо Render-ийн PostgreSQL database ашиглана. `DATABASE_URL` нь `render.yaml`-аар автоматаар backend-д холбогдоно.
 
 Хэрвээ Render service name давхцаад өөр URL өгвөл:
 

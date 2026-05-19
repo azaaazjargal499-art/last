@@ -1,2 +1,3 @@
 -- AlterTable
-ALTER TABLE `ai_analyses` MODIFY `content` LONGTEXT NOT NULL;
+ALTER TABLE "ai_analyses" ALTER COLUMN "content" TYPE TEXT,
+ALTER COLUMN "imageUrl" TYPE TEXT;

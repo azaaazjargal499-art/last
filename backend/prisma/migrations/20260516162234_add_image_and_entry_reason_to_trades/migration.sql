@@ -1,3 +1,3 @@
 -- AlterTable
-ALTER TABLE `trades` ADD COLUMN `entryReason` VARCHAR(191) NULL,
-    ADD COLUMN `imageUrl` VARCHAR(191) NULL;
+ALTER TABLE "trades" ADD COLUMN "entryReason" TEXT,
+ADD COLUMN "imageUrl" TEXT;

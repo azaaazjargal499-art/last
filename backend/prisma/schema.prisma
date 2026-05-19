@@ -5,7 +5,7 @@ generator client {
 }
 
 datasource db {
-  provider = "mysql"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -132,8 +132,8 @@ model AIAnalysis {
 
   type            AIAnalysisType
   title           String
-  content         String         @db.LongText
-  imageUrl String? @db.LongText
+  content         String         @db.Text
+  imageUrl        String?        @db.Text
   tradeIds        Json?
   recommendations Json?
 
