@@ -38,6 +38,7 @@ export const strategyService = {
 export const riskService = {
   calculate: (data) => api.post('/risk/calculate', data).then(r => r.data),
   getExposure:()    => api.get('/risk/exposure').then(r => r.data),
+  getPairs:()       => api.get('/risk/pairs').then(r => r.data),
 };
 
 // smart-inventory/frontend/src/services/authService.js
@@ -52,4 +53,20 @@ export const adminService = {
   getOverview: () => api.get('/admin/overview').then(r => r.data),
   getUsers: (params) => api.get('/admin/users', { params }).then(r => r.data),
   updateUser: (id, data) => api.patch(`/admin/users/${id}`, data).then(r => r.data),
+  getLessons: () => api.get('/admin/lessons').then(r => r.data),
+  createLesson: (data) => api.post('/admin/lessons', data).then(r => r.data),
+  updateLesson: (id, data) => api.put(`/admin/lessons/${id}`, data).then(r => r.data),
+  deleteLesson: (id) => api.delete(`/admin/lessons/${id}`).then(r => r.data),
+};
+
+export const lessonService = {
+  getAll: (params) => api.get('/lessons', { params }).then(r => r.data),
+};
+
+export const brokerService = {
+  status: () => api.get('/broker/status').then(r => r.data),
+  connect: (data) => api.post('/broker/connect', data).then(r => r.data),
+  sync: () => api.post('/broker/sync').then(r => r.data),
+  createEaToken: () => api.post('/broker/ea-token').then(r => r.data),
+  disconnect: () => api.post('/broker/disconnect').then(r => r.data),
 };

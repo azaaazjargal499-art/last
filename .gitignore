@@ -17,6 +17,12 @@ pnpm-debug.log*
 # Build output
 dist/
 build/
+.next/
+frontend/.next/
+
+# Python cache
+__pycache__/
+*.py[cod]
 
 # Runtime uploads
 uploads/

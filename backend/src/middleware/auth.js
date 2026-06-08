@@ -1,4 +1,3 @@
-// smart-inventory/backend/src/middleware/auth.js
 const jwt = require('jsonwebtoken');
 const prisma = require('../config/database');
 
@@ -26,7 +25,7 @@ const protect = async (req, res, next) => {
 
     const user = await prisma.user.findUnique({
       where: { id: decoded.id },
-      select: { id: true, email: true, username: true, role: true, balance: true, riskPerTrade: true },
+      select: { id: true, email: true, username: true, role: true, balance: true, riskPerTrade: true, selectedPairs: true, riskRewardPresets: true },
     });
 
     if (!user) {

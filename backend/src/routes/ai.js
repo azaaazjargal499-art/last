@@ -11,6 +11,7 @@ router.post('/subscription', auth.protect, aiController.createSubscription);
 // ─── Analysis Routes ────────────────────────────────────────────────
 router.post('/analyze-trades', auth.protect, aiController.analyzeTrades);
 router.post('/analyze-chart', auth.protect, aiController.analyzeChart);
+router.post('/chat', auth.protect, aiController.chat);
 router.get('/analyses', auth.protect, aiController.getAnalyses);
 
 module.exports = router;

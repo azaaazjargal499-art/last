@@ -6,10 +6,14 @@ const getDashboard = async (req, res, next) => {
   try {
     const userId = req.user.id;
 
-    const [allTrades, closedTrades, openTrades] = await Promise.all([
+    const [allTrades, closedTrades, openTrades, activeBroker] = await Promise.all([
       prisma.trade.findMany({ where: { userId } }),
       prisma.trade.findMany({ where: { userId, status: 'CLOSED' } }),
       prisma.trade.findMany({ where: { userId, status: 'OPEN' } }),
+      prisma.brokerConnection.findFirst({
+        where: { userId, isActive: true, accountBalance: { not: null } },
+        orderBy: { lastSyncedAt: 'desc' },
+      }),
     ]);
 
     const winTrades = closedTrades.filter(t => t.pnl > 0);
@@ -41,7 +45,9 @@ const getDashboard = async (req, res, next) => {
         avgWin: parseFloat(avgWin.toFixed(2)),
         avgLoss: parseFloat(avgLoss.toFixed(2)),
         riskRewardRatio: parseFloat(rr),
-        currentBalance: req.user.balance + totalPnL,
+      currentBalance: activeBroker?.accountBalance ?? req.user.balance + totalPnL,
+      accountEquity: activeBroker?.accountEquity ?? null,
+      accountCurrency: activeBroker?.accountCurrency ?? 'USD',
       },
     });
   } catch (error) {

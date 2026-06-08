@@ -12,12 +12,32 @@ const generateToken = (id) => {
 };
 
 const DEFAULT_FRONTEND_URL = 'http://localhost:3001';
+const DEFAULT_SELECTED_PAIRS = ['EUR/USD', 'GBP/USD', 'USD/JPY', 'USD/CHF', 'AUD/USD', 'EUR/GBP', 'EUR/JPY', 'XAU/USD', 'XAG/USD'];
+const DEFAULT_RISK_REWARD_PRESETS = [2, 3];
+const AVAILABLE_RISK_REWARD_PRESETS = new Set([1, 1.5, 2, 2.5, 3, 4, 5]);
+const AVAILABLE_PAIRS = new Set([
+  'EUR/USD', 'GBP/USD', 'USD/JPY', 'USD/CHF',
+  'AUD/USD', 'USD/CAD', 'NZD/USD', 'EUR/GBP',
+  'EUR/JPY', 'GBP/JPY', 'XAU/USD', 'XAG/USD',
+]);
 
 const normalizeOrigin = (value) => {
   try {
     return new URL(value).origin;
   } catch {
     return null;
+  }
+};
+
+const isLocalOrigin = (value) => {
+  const origin = normalizeOrigin(value);
+  if (!origin) return false;
+
+  try {
+    const { hostname } = new URL(origin);
+    return hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1';
+  } catch {
+    return false;
   }
 };
 
@@ -42,7 +62,29 @@ const getFrontendUrl = (req, preferredUrl) => {
   return candidates.find((url) => url && allowedOrigins.includes(normalizeOrigin(url))) || DEFAULT_FRONTEND_URL;
 };
 
-const getBackendUrl = (req) => process.env.BACKEND_URL || `${req.protocol}://${req.get('host')}`;
+const getBackendUrl = (req) => {
+  const requestUrl = `${req.protocol}://${req.get('host')}`;
+  return isLocalOrigin(requestUrl) ? requestUrl : process.env.BACKEND_URL || requestUrl;
+};
+
+const normalizeSelectedPairs = (pairs) => {
+  if (!Array.isArray(pairs)) return DEFAULT_SELECTED_PAIRS;
+  const normalized = pairs
+    .map((pair) => String(pair).trim().toUpperCase())
+    .filter((pair, index, list) => AVAILABLE_PAIRS.has(pair) && list.indexOf(pair) === index);
+
+  return normalized.length ? normalized : DEFAULT_SELECTED_PAIRS;
+};
+
+const normalizeRiskRewardPresets = (presets) => {
+  if (!Array.isArray(presets)) return DEFAULT_RISK_REWARD_PRESETS;
+  const normalized = presets
+    .map((value) => Number(value))
+    .filter((value, index, list) => AVAILABLE_RISK_REWARD_PRESETS.has(value) && list.indexOf(value) === index)
+    .sort((a, b) => a - b);
+
+  return normalized.length ? normalized : DEFAULT_RISK_REWARD_PRESETS;
+};
 
 const buildUniqueUsername = async (email, name) => {
   const base = (name || email.split('@')[0] || 'google_user')
@@ -80,7 +122,7 @@ const register = async (req, res, next) => {
 
     const user = await prisma.user.create({
       data: { email, username, password: hashedPassword, balance: parseFloat(balance) },
-      select: { id: true, email: true, username: true, role: true, balance: true, riskPerTrade: true, createdAt: true },
+      select: { id: true, email: true, username: true, role: true, balance: true, riskPerTrade: true, selectedPairs: true, riskRewardPresets: true, createdAt: true },
     });
 
     res.status(201).json({
@@ -135,7 +177,7 @@ const googleStart = (req, res) => {
     response_type: 'code',
     scope: 'openid email profile',
     prompt: 'select_account',
-    state: getFrontendUrl(req),
+    state: getFrontendUrl(req, req.query.frontend_url),
   });
 
   res.redirect(`https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`);
@@ -221,7 +263,7 @@ const getProfile = async (req, res, next) => {
       where: { id: req.user.id },
       select: {
         id: true, email: true, username: true, role: true,
-        balance: true, riskPerTrade: true, createdAt: true,
+        balance: true, riskPerTrade: true, selectedPairs: true, riskRewardPresets: true, createdAt: true,
         _count: { select: { trades: true, alerts: true, strategies: true } },
       },
     });
@@ -234,15 +276,17 @@ const getProfile = async (req, res, next) => {
 // ─── PUT /api/auth/profile ─────────────────────────────────────────
 const updateProfile = async (req, res, next) => {
   try {
-    const { balance, riskPerTrade } = req.body;
+    const { balance, riskPerTrade, selectedPairs, riskRewardPresets } = req.body;
 
     const user = await prisma.user.update({
       where: { id: req.user.id },
       data: {
         ...(balance !== undefined && { balance: parseFloat(balance) }),
         ...(riskPerTrade !== undefined && { riskPerTrade: parseFloat(riskPerTrade) }),
+        ...(selectedPairs !== undefined && { selectedPairs: normalizeSelectedPairs(selectedPairs) }),
+        ...(riskRewardPresets !== undefined && { riskRewardPresets: normalizeRiskRewardPresets(riskRewardPresets) }),
       },
-      select: { id: true, email: true, username: true, role: true, balance: true, riskPerTrade: true },
+      select: { id: true, email: true, username: true, role: true, balance: true, riskPerTrade: true, selectedPairs: true, riskRewardPresets: true },
     });
 
     res.json({ message: 'Профайл шинэчлэгдлээ', user: withEffectiveRole(user) });

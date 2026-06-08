@@ -4,7 +4,7 @@ const path = require('path');
 const prisma = require('../config/database');
 const { calculatePnL, validateTradePrices } = require('../utils/helpers');
 
-const uploadsPath = path.join(__dirname, '../uploads');
+const uploadsPath = path.join(__dirname, '../../uploads');
 const saveImageData = async (imageData, imageFilename, req) => {
   if (!imageData) return null;
   const match = imageData.match(/^data:(image\/[^;]+);base64,(.+)$/);
@@ -16,19 +16,19 @@ const saveImageData = async (imageData, imageFilename, req) => {
   await fs.mkdir(uploadsPath, { recursive: true });
   const filePath = path.join(uploadsPath, fileName);
   await fs.writeFile(filePath, Buffer.from(encoded, 'base64'));
-  const origin = `${req.protocol}://${req.get('host')}`;
-  return `${origin}/uploads/${fileName}`;
+  return `/uploads/${fileName}`;
 };
 
 // ─── GET /api/trades ───────────────────────────────────────────────
 const getTrades = async (req, res, next) => {
   try {
-    const { status, pair, page = 1, limit = 20, sortBy = 'openedAt', order = 'desc' } = req.query;
+    const { status, pair, source, page = 1, limit = 20, sortBy = 'openedAt', order = 'desc' } = req.query;
 
     const where = {
       userId: req.user.id,
       ...(status && { status }),
       ...(pair && { pair: { contains: pair } }),
+      ...(source === 'broker' && { mt5Ticket: { not: null } }),
     };
 
     const [trades, total] = await Promise.all([

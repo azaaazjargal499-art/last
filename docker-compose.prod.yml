@@ -47,13 +47,15 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile.prod
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-/api}
+        API_PROXY_URL: http://backend:5000
     container_name: smart_inventory_web_prod
     restart: always
     depends_on:
       - backend
     ports:
-      - '80:80'
-      - '443:443'
+      - '80:3001'
     networks:
       - smart_network
 

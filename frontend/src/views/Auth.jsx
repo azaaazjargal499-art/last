@@ -9,8 +9,9 @@ import { useAuthStore } from '@/store/authStore';
 const inputClass = 'h-12 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 pl-11 text-[15px] font-medium leading-none text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100';
 
 const startGoogleSignIn = () => {
-  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-  window.location.href = `${apiUrl}/auth/google`;
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+  const frontendUrl = encodeURIComponent(window.location.origin);
+  window.location.href = `${apiUrl}/auth/google?frontend_url=${frontendUrl}`;
 };
 
 // Animated Forex bars for chart visualization

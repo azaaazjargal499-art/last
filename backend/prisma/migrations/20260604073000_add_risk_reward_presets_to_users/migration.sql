@@ -1,0 +1,2 @@
+ALTER TABLE "users"
+ADD COLUMN "riskRewardPresets" JSONB NOT NULL DEFAULT '[2,3]';

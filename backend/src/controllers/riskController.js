@@ -1,9 +1,52 @@
 // smart-inventory/backend/src/controllers/riskController.js
 const prisma = require('../config/database');
-const { getInstrumentSpec, validateTradePrices } = require('../utils/helpers');
+const {
+  getInstrumentSpec,
+  getPipValuePerLotUsd,
+  getPositionSize,
+  requiresQuoteToUsdRate,
+  roundTo,
+  validateTradePrices,
+} = require('../utils/helpers');
 
-// ─── GET /api/risk/calculate ───────────────────────────────────────
-// Нэг арилжааны эрсдэл тооцоолол
+const getCurrentAccountBalance = async (userId, startingBalance) => {
+  const aggregate = await prisma.trade.aggregate({
+    where: { userId, status: 'CLOSED' },
+    _sum: { pnl: true },
+  });
+
+  return Number(startingBalance || 0) + Number(aggregate._sum.pnl || 0);
+};
+
+const getUserPairs = async (req, res, next) => {
+  try {
+    const selectedPairs = Array.isArray(req.user.selectedPairs) && req.user.selectedPairs.length
+      ? req.user.selectedPairs
+      : ['EUR/USD', 'GBP/USD', 'USD/JPY', 'USD/CHF', 'AUD/USD', 'EUR/GBP', 'EUR/JPY', 'XAU/USD', 'XAG/USD'];
+
+    const pairs = selectedPairs.map((pair) => {
+      const spec = getInstrumentSpec(pair);
+      return {
+        pair,
+        contractSize: spec.contractSize,
+        pipSize: spec.pipSize,
+        requiresQuoteToUsdRate: requiresQuoteToUsdRate(pair),
+      };
+    });
+
+    const currentBalance = await getCurrentAccountBalance(req.user.id, req.user.balance);
+
+    res.json({
+      pairs,
+      currentBalance: parseFloat(currentBalance.toFixed(2)),
+      startingBalance: req.user.balance,
+      riskPerTrade: req.user.riskPerTrade,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 const calculateRisk = async (req, res, next) => {
   try {
     const {
@@ -13,74 +56,112 @@ const calculateRisk = async (req, res, next) => {
       accountBalance,
       riskPercent,
       lotSize,
+      quoteToUsdRate,
+      direction,
+      riskRewardRatio,
     } = req.body;
 
-    const balance = parseFloat(accountBalance || req.user.balance);
+    const currentBalance = await getCurrentAccountBalance(req.user.id, req.user.balance);
+    const providedBalance = parseFloat(accountBalance);
+    const balance = Number.isFinite(providedBalance) ? providedBalance : currentBalance;
     const risk = parseFloat(riskPercent || req.user.riskPerTrade);
     const priceError = validateTradePrices({ pair, entryPrice, exitPrice: stopLoss });
     if (priceError) return res.status(400).json({ error: priceError });
 
-    const riskAmount = balance * (risk / 100);  // Мөнгөн дүн
-    const spec = getInstrumentSpec(pair);
-    const pipsAtRisk = Math.abs(parseFloat(entryPrice) - parseFloat(stopLoss)) / spec.pipSize;
-    const pipValuePerLot = spec.contractSize * spec.pipSize;
+    const result = getPositionSize({
+      pair,
+      direction,
+      entryPrice,
+      stopLoss,
+      balance,
+      riskPercent: risk,
+      quoteToUsdRate,
+      providedLotSize: lotSize,
+      riskRewardRatio,
+    });
 
-    const recommendedLots = riskAmount / (pipsAtRisk * pipValuePerLot);
+    if (result.error) {
+      return res.status(400).json(result);
+    }
+
+    const spec = getInstrumentSpec(pair);
+    const pipValuePerLot = getPipValuePerLotUsd({ pair, price: entryPrice, quoteToUsdRate });
 
     res.json({
-      pair,
-      accountBalance: balance,
-      riskPercent: risk,
-      riskAmount: parseFloat(riskAmount.toFixed(2)),
-      pipsAtRisk: parseFloat(pipsAtRisk.toFixed(1)),
-      recommendedLotSize: parseFloat(recommendedLots.toFixed(2)),
-      providedLotSize: lotSize ? parseFloat(lotSize) : null,
+      ...result,
+      accountBalance: roundTo(result.accountBalance, 2),
+      currentBalance: roundTo(currentBalance, 2),
+      targetRiskAmount: roundTo(result.targetRiskAmount, 2),
+      stopDistance: roundTo(result.stopDistance, 5),
+      pipsAtRisk: roundTo(result.pipsAtRisk, 1),
+      exactLotSize: roundTo(result.exactLotSize, 4),
+      brokerLotSize: result.brokerLotSize === null ? null : roundTo(result.brokerLotSize, spec.lotDecimals),
+      executableLotSize: roundTo(result.executableLotSize, spec.lotDecimals),
+      actualRiskAmount: roundTo(result.actualRiskAmount, 2),
+      actualRiskPercent: roundTo(result.actualRiskPercent, 2),
+      minLotRiskAmount: roundTo(result.minLotRiskAmount, 2),
+      minLotRiskPercent: roundTo(result.minLotRiskPercent, 2),
+      providedRiskAmount: result.providedRiskAmount === null ? null : roundTo(result.providedRiskAmount, 2),
+      providedRiskPercent: result.providedRiskPercent === null ? null : roundTo(result.providedRiskPercent, 2),
+      takeProfitPrice: result.takeProfitPrice === null ? null : roundTo(result.takeProfitPrice, 5),
+      potentialRewardAmount: result.potentialRewardAmount === null ? null : roundTo(result.potentialRewardAmount, 2),
+      potentialRewardPercent: result.potentialRewardPercent === null ? null : roundTo(result.potentialRewardPercent, 2),
+      pipSize: spec.pipSize,
+      contractSize: spec.contractSize,
+      pipValuePerLot: roundTo(pipValuePerLot, 4),
+      riskPercent: result.targetRiskPercent,
+      riskAmount: roundTo(result.targetRiskAmount, 2),
+      recommendedLotSize: roundTo(result.exactLotSize, 4),
+      warning: result.isBelowMinimumLot
+        ? `Зорьсон risk-д таарах lot ${spec.minLot}-оос бага байна. Minimum lot хэрэглэвэл бодит risk ${roundTo(result.actualRiskPercent, 2)}% болно.`
+        : null,
     });
   } catch (error) {
     next(error);
   }
 };
 
-// ─── GET /api/risk/exposure ────────────────────────────────────────
-// Нийт нээлттэй позицуудын эрсдэл
 const getExposure = async (req, res, next) => {
   try {
     const openTrades = await prisma.trade.findMany({
       where: { userId: req.user.id, status: 'OPEN' },
     });
 
-    const balance = req.user.balance;
+    const balance = await getCurrentAccountBalance(req.user.id, req.user.balance);
     let totalExposure = 0;
 
-    const positions = openTrades.map(t => {
-      const spec = getInstrumentSpec(t.pair);
-      const exposure = t.stopLoss
-        ? Math.abs(t.entryPrice - t.stopLoss) * t.lotSize * spec.contractSize / balance * 100
-        : t.lotSize * 1000 / balance * 100;
+    const positions = openTrades.map((trade) => {
+      const spec = getInstrumentSpec(trade.pair);
+      const pipValuePerLot = getPipValuePerLotUsd({ pair: trade.pair, price: trade.entryPrice });
+      const exposure = trade.stopLoss && pipValuePerLot
+        ? (Math.abs(trade.entryPrice - trade.stopLoss) / spec.pipSize) * pipValuePerLot * trade.lotSize / balance * 100
+        : trade.lotSize * 1000 / balance * 100;
 
       totalExposure += exposure;
       return {
-        id: t.id,
-        pair: t.pair,
-        direction: t.direction,
-        lotSize: t.lotSize,
-        entryPrice: t.entryPrice,
-        stopLoss: t.stopLoss,
+        id: trade.id,
+        pair: trade.pair,
+        direction: trade.direction,
+        lotSize: trade.lotSize,
+        entryPrice: trade.entryPrice,
+        stopLoss: trade.stopLoss,
         exposurePercent: parseFloat(exposure.toFixed(2)),
+        pipSize: spec.pipSize,
+        contractSize: spec.contractSize,
       };
     });
 
     res.json({
-      accountBalance: balance,
+      accountBalance: parseFloat(balance.toFixed(2)),
       riskPerTrade: req.user.riskPerTrade,
       openPositions: positions.length,
       totalExposurePercent: parseFloat(totalExposure.toFixed(2)),
       positions,
-      isOverExposed: totalExposure > 10, // 10% дээш бол анхааруулга
+      isOverExposed: totalExposure > 10,
     });
   } catch (error) {
     next(error);
   }
 };
 
-module.exports = { calculateRisk, getExposure };
+module.exports = { calculateRisk, getExposure, getUserPairs };

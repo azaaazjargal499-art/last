@@ -4,15 +4,17 @@
   "description": "Smart Inventory - Forex Trading Journal Frontend",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
+    "dev": "next dev -p 3001",
+    "build": "next build",
+    "start": "next start -p 3001",
+    "preview": "next start -p 3001"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.24.1",
     "axios": "^1.6.7",
     "date-fns": "^3.3.1",
     "lucide-react": "^0.323.0",
+    "next": "^14.2.30",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-hook-form": "^7.50.1",
@@ -24,10 +26,8 @@
   "devDependencies": {
     "@types/react": "^18.2.55",
     "@types/react-dom": "^18.2.19",
-    "@vitejs/plugin-react": "^4.2.1",
     "autoprefixer": "^10.4.17",
     "postcss": "^8.4.35",
-    "tailwindcss": "^3.4.1",
-    "vite": "^5.1.1"
+    "tailwindcss": "^3.4.1"
   }
 }

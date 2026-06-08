@@ -31,4 +31,22 @@ export const FOREX_PAIRS = [
   'EUR/JPY', 'GBP/JPY', 'XAU/USD', 'XAG/USD',
 ];
 
+export const DEFAULT_SELECTED_PAIRS = [
+  'EUR/USD', 'GBP/USD', 'USD/JPY', 'USD/CHF',
+  'AUD/USD', 'EUR/GBP', 'EUR/JPY', 'XAU/USD', 'XAG/USD',
+];
+
+export const RISK_REWARD_PRESETS = [1, 1.5, 2, 2.5, 3, 4, 5];
+export const DEFAULT_RISK_REWARD_PRESETS = [2, 3];
+
+export const getUserPairs = (user) =>
+  Array.isArray(user?.selectedPairs) && user.selectedPairs.length
+    ? user.selectedPairs
+    : DEFAULT_SELECTED_PAIRS;
+
+export const getUserRiskRewardPresets = (user) =>
+  Array.isArray(user?.riskRewardPresets) && user.riskRewardPresets.length
+    ? user.riskRewardPresets
+    : DEFAULT_RISK_REWARD_PRESETS;
+
 export const TIMEFRAMES = ['M1', 'M5', 'M15', 'M30', 'H1', 'H4', 'D1', 'W1', 'MN'];

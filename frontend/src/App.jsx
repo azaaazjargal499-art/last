@@ -3,17 +3,20 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from '@/store/authStore';
 
 // Pages
-import Landing   from '@/pages/Landing';
-import Auth      from '@/pages/Auth';
-import Dashboard from '@/pages/Dashboard';
-import Trades    from '@/pages/Trades';
-import Analytics from '@/pages/Analytics';
-import AI        from '@/pages/AI';
-import RiskMgmt  from '@/pages/RiskManagement';
-import Alerts    from '@/pages/Alerts';
-import Strategies from '@/pages/Strategies';
-import Settings  from '@/pages/Settings';
-import Admin     from '@/pages/Admin';
+import Landing   from '@/views/Landing';
+import Auth      from '@/views/Auth';
+import Dashboard from '@/views/Dashboard';
+import Trades    from '@/views/Trades';
+import Analytics from '@/views/Analytics';
+import AI        from '@/views/AI';
+import RiskMgmt  from '@/views/RiskManagement';
+import Alerts    from '@/views/Alerts';
+import Learn     from '@/views/Learn';
+import LiveChart from '@/views/LiveChart';
+import Broker    from '@/views/Broker';
+import Strategies from '@/views/Strategies';
+import Settings  from '@/views/Settings';
+import Admin     from '@/views/Admin';
 
 // Layout
 import Layout from '@/components/common/Layout';
@@ -54,8 +57,11 @@ export default function App() {
         <Route path="trades" element={<Trades />} />
         <Route path="analytics" element={<Analytics />} />
         <Route path="ai" element={<AI />} />
+        <Route path="chart" element={<LiveChart />} />
+        <Route path="broker" element={<Broker />} />
         <Route path="risk" element={<RiskMgmt />} />
         <Route path="alerts" element={<Alerts />} />
+        <Route path="learn" element={<Learn />} />
         <Route path="strategies" element={<Strategies />} />
         <Route path="settings" element={<Settings />} />
         <Route path="admin" element={<AdminRoute><Admin /></AdminRoute>} />

@@ -1,10 +1,11 @@
 // smart-inventory/backend/src/routes/risk.js
 const router = require('express').Router();
-const { calculateRisk, getExposure } = require('../controllers/riskController');
+const { calculateRisk, getExposure, getUserPairs } = require('../controllers/riskController');
 const { protect } = require('../middleware/auth');
 
 router.use(protect);
 router.post('/calculate', calculateRisk);
 router.get('/exposure', getExposure);
+router.get('/pairs', getUserPairs);
 
 module.exports = router;

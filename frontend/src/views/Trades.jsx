@@ -18,16 +18,19 @@ import {
   CalendarDays,
   ChevronLeft,
   ChevronRight,
+  Image,
   Pencil,
   Plus,
   SlidersHorizontal,
   Trash2,
+  Upload,
   X,
 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import { strategyService, tradeService } from '@/services/index';
-import { FOREX_PAIRS, formatPnL } from '@/utils/formatters';
+import { formatPnL, getUserPairs } from '@/utils/formatters';
+import { useAuthStore } from '@/store/authStore';
 
 const inputCls = 'h-11 w-full rounded-xl border border-slate-200 bg-slate-50/70 px-3.5 text-sm font-medium text-slate-950 outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100';
 const labelCls = 'mb-1.5 block text-xs font-bold text-slate-500';
@@ -62,6 +65,21 @@ const compactMoney = (value) => {
   return `${sign}$${abs.toFixed(0)}`;
 };
 
+const getImageSrc = (imageUrl) => {
+  if (!imageUrl) return '';
+
+  try {
+    const url = new URL(imageUrl);
+    if (url.hostname === 'localhost' || url.hostname === '127.0.0.1') {
+      return `${url.pathname}${url.search}`;
+    }
+  } catch {
+    return imageUrl;
+  }
+
+  return imageUrl;
+};
+
 const buildCalendarDays = (month) => {
   const start = startOfWeek(startOfMonth(month), { weekStartsOn: 0 });
   const end = endOfWeek(endOfMonth(month), { weekStartsOn: 0 });
@@ -70,15 +88,19 @@ const buildCalendarDays = (month) => {
 
 export default function Trades() {
   const qc = useQueryClient();
+  const { user } = useAuthStore();
+  const tradePairs = getUserPairs(user);
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
   const [filter, setFilter] = useState({ status: '', pair: '' });
   const [viewMonth, setViewMonth] = useState(() => new Date());
   const [selectedDate, setSelectedDate] = useState(() => new Date());
+  const [chartImage, setChartImage] = useState(null);
+  const [previewTrade, setPreviewTrade] = useState(null);
 
   const { register, handleSubmit, reset, setValue } = useForm({
     defaultValues: {
-      pair: FOREX_PAIRS[0],
+      pair: tradePairs[0],
       direction: 'BUY',
       openedAtDate: '',
       openedAtTime: '',
@@ -140,6 +162,11 @@ export default function Trades() {
     [trades, selectedDate],
   );
 
+  const chartTrades = useMemo(
+    () => selectedTrades.filter((trade) => Boolean(trade.imageUrl)),
+    [selectedTrades],
+  );
+
   const weekStats = useMemo(() => {
     const weeks = [];
     for (let index = 0; index < calendarDays.length; index += 7) {
@@ -157,8 +184,9 @@ export default function Trades() {
   const closeForm = () => {
     setShowForm(false);
     setEditing(null);
+    setChartImage(null);
     reset({
-      pair: FOREX_PAIRS[0],
+      pair: tradePairs[0],
       direction: 'BUY',
       openedAtDate: '',
       openedAtTime: '',
@@ -171,8 +199,9 @@ export default function Trades() {
   const openCreate = (date = selectedDate) => {
     setEditing(null);
     setShowForm(true);
+    setChartImage(null);
     reset({
-      pair: FOREX_PAIRS[0],
+      pair: tradePairs[0],
       direction: 'BUY',
       openedAtDate: format(date, 'yyyy-MM-dd'),
       openedAtTime: '09:00',
@@ -185,6 +214,7 @@ export default function Trades() {
   const openEdit = (trade) => {
     setEditing(trade);
     setShowForm(true);
+    setChartImage(trade.imageUrl ? { preview: getImageSrc(trade.imageUrl), filename: '' } : null);
     Object.entries(trade).forEach(([key, value]) => value !== null && setValue(key, value));
     const openedParts = toLocalDateTimeParts(trade.openedAt);
     const closedParts = toLocalDateTimeParts(trade.closedAt);
@@ -194,12 +224,31 @@ export default function Trades() {
     setValue('closedAtTime', closedParts.time);
   };
 
+  const handleChartImage = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      setChartImage({
+        data: reader.result,
+        preview: reader.result,
+        filename: file.name,
+      });
+    };
+    reader.readAsDataURL(file);
+  };
+
   const submitTrade = (values) => {
     const payload = {
       ...values,
       openedAt: combineDateTime(values.openedAtDate, values.openedAtTime),
       closedAt: combineDateTime(values.closedAtDate, values.closedAtTime),
     };
+    if (chartImage?.data) {
+      payload.imageData = chartImage.data;
+      payload.imageFilename = chartImage.filename;
+    }
     delete payload.openedAtDate;
     delete payload.openedAtTime;
     delete payload.closedAtDate;
@@ -280,7 +329,7 @@ export default function Trades() {
                 className="rounded-xl border border-white/10 bg-slate-950/40 px-3 py-2.5 text-slate-200 outline-none hover:bg-slate-950/60"
               >
                 <option value="">Бүх пар</option>
-                {FOREX_PAIRS.map((pair) => <option key={pair} value={pair}>{pair}</option>)}
+                {tradePairs.map((pair) => <option key={pair} value={pair}>{pair}</option>)}
               </select>
               <button className="grid h-10 w-10 place-items-center rounded-xl border border-white/10 bg-white/[0.06] text-slate-300 hover:bg-white/[0.1]" title="Шүүлтүүр">
                 <SlidersHorizontal className="h-4 w-4" />
@@ -316,7 +365,7 @@ export default function Trades() {
                     key={day.toISOString()}
                     onClick={() => setSelectedDate(day)}
                     onDoubleClick={() => openCreate(day)}
-                    className={`group relative flex min-h-32 flex-col overflow-hidden rounded-2xl border p-3 text-left transition-all duration-200 ${
+                    className={`group relative flex min-h-[7.25rem] flex-col overflow-hidden rounded-2xl border p-3 text-left transition-all duration-200 xl:min-h-[7.75rem] ${
                       hasTrades
                         ? positive
                           ? 'border-emerald-300/50 bg-emerald-400/[0.13] shadow-[0_0_0_1px_rgba(52,211,153,0.12),0_18px_40px_rgba(16,185,129,0.08)]'
@@ -358,7 +407,7 @@ export default function Trades() {
                 {weekStats.map((week) => {
                   const positive = week.pnl >= 0;
                   return (
-                    <div key={week.label} className="flex min-h-32 flex-col justify-center rounded-2xl border border-white/10 bg-white/[0.055] p-4 shadow-sm">
+                    <div key={week.label} className="flex min-h-[7.25rem] flex-col justify-center rounded-2xl border border-white/10 bg-white/[0.055] p-4 shadow-sm xl:min-h-[7.75rem]">
                       <div className="text-xs font-extrabold text-slate-400">{week.label}</div>
                       <div className={`mt-2 font-mono text-xl font-black ${positive ? 'text-emerald-300' : 'text-rose-300'}`}>{compactMoney(week.pnl)}</div>
                       <div className="mt-3 w-fit rounded-full bg-white/10 px-2.5 py-1 text-[11px] font-bold text-slate-300">{week.trades} trades</div>
@@ -393,10 +442,25 @@ export default function Trades() {
               Энэ өдөр арилжаа бүртгэгдээгүй байна.
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="max-h-[460px] space-y-3 overflow-y-auto pr-1">
               {selectedTrades.map((trade) => (
                 <div key={trade.id} className="grid gap-3 rounded-2xl border border-white/10 bg-slate-950/35 p-4 md:grid-cols-[1fr_auto]">
-                  <div className="grid gap-3 md:grid-cols-5">
+                  <div className="grid gap-3 md:grid-cols-[84px_repeat(5,minmax(0,1fr))]">
+                    <button
+                      type="button"
+                      onClick={() => trade.imageUrl && setPreviewTrade(trade)}
+                      disabled={!trade.imageUrl}
+                      className="h-16 overflow-hidden rounded-xl border border-white/10 bg-white/[0.04] text-left transition hover:border-cyan-300/50 disabled:cursor-default"
+                      title={trade.imageUrl ? 'Screenshot томоор харах' : 'Screenshot байхгүй'}
+                    >
+                      {trade.imageUrl ? (
+                        <img src={getImageSrc(trade.imageUrl)} alt={`${trade.pair} chart`} className="h-full w-full object-cover" />
+                      ) : (
+                        <div className="grid h-full place-items-center text-slate-500">
+                          <Image className="h-5 w-5" />
+                        </div>
+                      )}
+                    </button>
                     <div>
                       <div className="font-mono text-sm font-black text-white">{trade.pair}</div>
                       <div className={`mt-1 w-fit rounded-full px-2 py-0.5 text-[10px] font-black ${trade.direction === 'BUY' ? 'bg-emerald-300 text-emerald-950' : 'bg-rose-300 text-rose-950'}`}>
@@ -412,6 +476,12 @@ export default function Trades() {
                         {trade.pnl !== null ? formatPnL(trade.pnl) : '-'}
                       </div>
                     </div>
+                    {trade.notes && (
+                      <div className="md:col-span-6 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2">
+                        <div className="mb-1 text-[10px] font-black uppercase tracking-wide text-slate-500">Тэмдэглэл</div>
+                        <p className="whitespace-pre-line text-sm font-semibold leading-6 text-slate-300">{trade.notes}</p>
+                      </div>
+                    )}
                   </div>
                   <div className="flex items-center gap-1 justify-self-end">
                     <button onClick={() => openEdit(trade)} className="grid h-9 w-9 place-items-center rounded-xl text-slate-400 hover:bg-white/10 hover:text-white" title="Засах">
@@ -423,6 +493,53 @@ export default function Trades() {
                   </div>
                 </div>
               ))}
+            </div>
+          )}
+        </section>
+
+        <section className="rounded-[24px] border border-white/10 bg-white/[0.045] p-5 shadow-2xl shadow-black/10 backdrop-blur-xl">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <div>
+              <h2 className="font-display text-lg font-bold text-white">Chart overview</h2>
+              <p className="text-xs font-semibold text-slate-400">Screenshot-той арилжаанууд</p>
+            </div>
+            <div className="rounded-full bg-white/10 px-2.5 py-1 text-xs font-bold text-slate-300">{chartTrades.length}</div>
+          </div>
+
+          {chartTrades.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-white/10 py-10 text-center text-sm text-slate-400">
+              Screenshot хадгалсан арилжаа алга.
+            </div>
+          ) : (
+            <div className="grid max-h-[520px] gap-3 overflow-y-auto pr-1 sm:grid-cols-2 xl:grid-cols-1">
+              {chartTrades.map((trade) => {
+                const positive = Number(trade.pnl || 0) >= 0;
+                return (
+                  <button
+                    key={trade.id}
+                    type="button"
+                    onClick={() => setPreviewTrade(trade)}
+                    className="overflow-hidden rounded-2xl border border-white/10 bg-slate-950/35 text-left transition hover:border-cyan-300/40"
+                    title="Screenshot томоор харах"
+                  >
+                    <div className="aspect-[16/9] max-h-56 bg-white/[0.04]">
+                      <img src={getImageSrc(trade.imageUrl)} alt={`${trade.pair} chart screenshot`} className="h-full w-full object-cover" />
+                    </div>
+                    <div className="space-y-2 p-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-mono text-sm font-black text-white">{trade.pair}</span>
+                        <span className={`rounded-full px-2 py-0.5 text-[10px] font-black ${positive ? 'bg-emerald-300 text-emerald-950' : 'bg-rose-300 text-rose-950'}`}>
+                          {positive ? 'WIN' : 'LOSS'}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between gap-2 text-xs font-semibold text-slate-400">
+                        <span>{format(getTradeDate(trade), 'MMM d, yyyy')}</span>
+                        <span className={positive ? 'text-emerald-300' : 'text-rose-300'}>{trade.pnl !== null ? formatPnL(trade.pnl) : 'OPEN'}</span>
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           )}
         </section>
@@ -455,7 +572,7 @@ export default function Trades() {
               <div className="grid gap-3.5 md:grid-cols-2">
                 <Field label="Валютын пар *">
                   <select {...register('pair', { required: true })} className={inputCls}>
-                    {FOREX_PAIRS.map((pair) => <option key={pair} value={pair}>{pair}</option>)}
+                    {tradePairs.map((pair) => <option key={pair} value={pair}>{pair}</option>)}
                   </select>
                 </Field>
                 <Field label="Чиглэл *">
@@ -502,6 +619,30 @@ export default function Trades() {
                 </Field>
               </div>
 
+              <Field label="Chart screenshot">
+                <div className="grid gap-3 rounded-2xl border border-dashed border-slate-300 bg-slate-50/70 p-3 sm:grid-cols-[160px_1fr]">
+                  <div className="aspect-video overflow-hidden rounded-xl border border-slate-200 bg-white">
+                    {chartImage?.preview ? (
+                      <img src={chartImage.preview} alt="Trade chart preview" className="h-full w-full object-cover" />
+                    ) : (
+                      <div className="grid h-full place-items-center text-slate-400">
+                        <Image className="h-7 w-7" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex flex-col justify-center gap-2">
+                    <label className="inline-flex w-fit cursor-pointer items-center gap-2 rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-bold text-white shadow-lg shadow-slate-950/15 transition hover:bg-slate-800">
+                      <Upload className="h-4 w-4" />
+                      Screenshot сонгох
+                      <input type="file" accept="image/*" onChange={handleChartImage} className="hidden" />
+                    </label>
+                    <p className="text-xs font-semibold text-slate-500">
+                      Entry/exit chart screenshot-оо хадгалбал Chart overview дээр тусдаа гарна.
+                    </p>
+                  </div>
+                </div>
+              </Field>
+
               <Field label="Тэмдэглэл">
                 <textarea {...register('notes')} rows={3} placeholder="Арилжааны шалтгаан, дүн шинжилгээ..." className={`${inputCls} h-auto min-h-24 resize-none py-3 leading-6`} />
               </Field>
@@ -516,6 +657,101 @@ export default function Trades() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {previewTrade && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/90 p-3 backdrop-blur-xl sm:p-5"
+          onClick={() => setPreviewTrade(null)}
+        >
+          <div
+            className="trade-image-preview flex max-h-[94vh] w-full max-w-6xl flex-col overflow-hidden rounded-[28px] border border-white/10 bg-[#050816] shadow-2xl shadow-black/50 ring-1 ring-white/5"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="trade-preview-header shrink-0 border-b border-white/10 bg-[radial-gradient(circle_at_18%_0%,rgba(37,99,235,0.28),transparent_34%),linear-gradient(135deg,rgba(255,255,255,0.08),rgba(255,255,255,0.02))] px-4 py-4 sm:px-6">
+              <div className="flex items-center justify-between gap-4">
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <div className="font-sans text-xl font-black tracking-normal text-white">{previewTrade.pair}</div>
+                    <span className={`rounded-full px-2.5 py-1 text-[11px] font-black uppercase tracking-wide ${
+                      previewTrade.direction === 'BUY'
+                        ? 'bg-emerald-400/15 text-emerald-200 ring-1 ring-emerald-300/20'
+                        : 'bg-rose-400/15 text-rose-200 ring-1 ring-rose-300/20'
+                    }`}>
+                      {previewTrade.direction}
+                    </span>
+                  </div>
+                  <div className="mt-1 flex flex-wrap items-center gap-2 text-xs font-semibold text-slate-400">
+                    <span>{format(getTradeDate(previewTrade), 'MMM d, yyyy')}</span>
+                    {previewTrade.strategy?.name && (
+                      <>
+                        <span className="h-1 w-1 rounded-full bg-slate-600" />
+                        <span>{previewTrade.strategy.name}</span>
+                      </>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className={`rounded-2xl border px-4 py-2 font-mono text-sm font-black ${
+                    Number(previewTrade.pnl || 0) >= 0
+                      ? 'border-emerald-300/20 bg-emerald-400/10 text-emerald-200'
+                      : 'border-rose-300/20 bg-rose-400/10 text-rose-200'
+                  }`}>
+                    {previewTrade.pnl !== null ? formatPnL(previewTrade.pnl) : 'OPEN'}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setPreviewTrade(null)}
+                    className="grid h-10 w-10 place-items-center rounded-2xl border border-white/10 bg-white/[0.06] text-slate-300 transition hover:bg-white/10 hover:text-white"
+                    aria-label="Preview хаах"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+              <div className="trade-preview-body min-h-0 overflow-y-auto bg-[linear-gradient(180deg,#071020,#050816)] p-3 sm:p-5">
+                <div className="trade-preview-chart overflow-hidden rounded-2xl border border-white/10 bg-slate-950 shadow-2xl shadow-black/30 ring-1 ring-white/10">
+                  <img
+                    src={getImageSrc(previewTrade.imageUrl)}
+                    alt={`${previewTrade.pair} saved chart screenshot`}
+                    className="mx-auto max-h-[68vh] min-h-[360px] w-full object-cover object-left"
+                  />
+                </div>
+
+                {(previewTrade.notes || previewTrade.entryReason) && (
+                  <div className="mt-4 grid gap-3 lg:grid-cols-[1fr_420px]">
+                    <div className="trade-preview-note rounded-2xl border border-white/10 bg-white/[0.06] p-4 ring-1 ring-white/5">
+                      <div className="mb-2 flex items-center gap-2 text-xs font-black uppercase tracking-wide text-slate-500">
+                        <Image className="h-4 w-4" />
+                        Тэмдэглэл
+                    </div>
+                    <p className="whitespace-pre-line text-sm font-semibold leading-6 text-slate-300">
+                        {previewTrade.notes || previewTrade.entryReason}
+                      </p>
+                    </div>
+                    <div className="trade-preview-metrics rounded-2xl border border-white/10 bg-white/[0.06] p-3 ring-1 ring-white/5">
+                      <div className="grid h-full grid-cols-3 overflow-hidden rounded-xl border border-white/10 bg-slate-950/35">
+                        <div className="p-3">
+                          <div className="text-[10px] font-black uppercase tracking-wide text-slate-500">Entry</div>
+                          <div className="mt-1 font-mono text-base font-black text-white">{previewTrade.entryPrice || '-'}</div>
+                        </div>
+                        <div className="border-x border-white/10 p-3">
+                          <div className="text-[10px] font-black uppercase tracking-wide text-slate-500">Exit</div>
+                          <div className="mt-1 font-mono text-base font-black text-white">{previewTrade.exitPrice || '-'}</div>
+                        </div>
+                        <div className="p-3">
+                          <div className="text-[10px] font-black uppercase tracking-wide text-slate-500">Lot</div>
+                          <div className="mt-1 font-mono text-base font-black text-white">{previewTrade.lotSize || '-'}</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+            </div>
           </div>
         </div>
       )}

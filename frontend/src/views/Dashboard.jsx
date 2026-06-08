@@ -82,6 +82,7 @@ export default function Dashboard() {
   });
 
   const s = stats?.summary;
+  const displayBalance = s?.currentBalance ?? user?.balance ?? 0;
 
   return (
     <div className="space-y-6 animate-slide-up">
@@ -131,7 +132,13 @@ export default function Dashboard() {
           <StatCard icon={TrendingUp} label="Дундаж ашиг" value={formatCurrency(s?.avgWin || 0)} tone="emerald" />
           <StatCard icon={TrendingDown} label="Дундаж алдагдал" value={formatCurrency(s?.avgLoss || 0)} tone="rose" />
           <StatCard icon={BarChart2} label="Хаагдсан арилжаа" value={s?.closedTrades || 0} />
-          <StatCard icon={Award} label="Эхлэх баланс" value={formatCurrency(user?.balance || 0)} tone="amber" />
+          <StatCard
+            icon={Award}
+            label="Account balance"
+            value={formatCurrency(displayBalance)}
+            tone="amber"
+            sub={s?.accountEquity ? `Equity: ${formatCurrency(s.accountEquity)}` : undefined}
+          />
         </div>
       )}
 

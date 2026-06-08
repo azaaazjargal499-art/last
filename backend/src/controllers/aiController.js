@@ -127,6 +127,99 @@ const buildChartFallbackAnalysis = ({ pair, timeframe }) => `Чартын шин
 
 GROQ_API_KEY valid болсон үед зурагнаас шууд vision analysis авч хадгална.`;
 
+const buildChatFallback = ({ message, hasImage }) => `AI provider одоогоор холбогдоогүй байна.
+
+${hasImage ? 'Зураг ирсэн боловч GROQ_API_KEY тохируулаагүй тул chart-ыг шууд харж шинжилж чадсангүй.' : 'Chart зураг илгээгээгүй байна.'}
+
+Түр зөвлөмж:
+- Одоохондоо шинэ оролт бүү яар. WAIT / NO TRADE.
+- Дээд timeframe дээр чиглэлээ шалга.
+- Entry хийхээс өмнө liquidity sweep, break/retest эсвэл candle close баталгаажуул.
+- SL-ээ хамгийн ойрын structure-ийн цаана тавь.
+- Нэг арилжаанд balance-ийн 1-2%-иас их эрсдэл авахгүй.
+
+Таны асуулт: ${message || 'хоосон'}`;
+
+const STRATEGY_STACK = [
+  'CRT',
+  'SMC',
+  'QM',
+  'Head & Shoulders',
+  'ICT',
+  'Key Level',
+  'Fibonacci Golden Zone',
+  'POI',
+  'Candle Pattern',
+  'Breakout',
+  'Chart Pattern',
+  'IDM',
+  'Liquidity Sweep',
+];
+
+const buildFallbackSignal = ({ message, hasImage }) => ({
+  bias: 'WAIT',
+  probability: 35,
+  entryZone: 'Тодорхойгүй',
+  stopLoss: 'Тодорхойгүй',
+  takeProfits: ['Тодорхойгүй'],
+  invalidation: 'Chart-ыг AI vision-р уншиж чадаагүй.',
+  summary: hasImage
+    ? 'Зураг ирсэн боловч provider ажиллаагүй тул зураг дээр шууд annotation хийж чадсангүй.'
+    : 'Chart зураг илгээгээгүй байна.',
+  strategies: [
+    { name: 'Key Level', verdict: 'neutral', note: 'Дээд timeframe key level шалгах шаардлагатай.' },
+    { name: 'Liquidity Sweep', verdict: 'neutral', note: 'Sweep баталгаагүй.' },
+  ],
+  reasons: [
+    'Provider fallback ажилласан.',
+    'Оролт хийхээс өмнө candle close баталгаажуул.',
+    'SL-ээ structure-ийн цаана байрлуул.',
+  ],
+  riskNote: 'Нэг арилжаанд balance-ийн 1-2%-иас их эрсдэл авахгүй.',
+  annotations: [],
+  text: buildChatFallback({ message, hasImage }),
+});
+
+const signalToText = (signal) => {
+  if (!signal || typeof signal !== 'object') return '';
+  const tp = Array.isArray(signal.takeProfits) ? signal.takeProfits.join(', ') : signal.takeProfits;
+  const strategies = Array.isArray(signal.strategies)
+    ? signal.strategies.map((item) => `- ${item.name}: ${item.verdict}${item.note ? ` — ${item.note}` : ''}`).join('\n')
+    : '';
+  const reasons = Array.isArray(signal.reasons)
+    ? signal.reasons.map((item) => `- ${item}`).join('\n')
+    : '';
+
+  return `Bias: ${signal.bias || 'WAIT'} (${signal.probability || 0}%)
+Entry zone: ${signal.entryZone || '-'}
+Stop loss: ${signal.stopLoss || '-'}
+Take profit: ${tp || '-'}
+
+Яагаад:
+${reasons}
+
+Strategy checklist:
+${strategies}
+
+Эрсдэл: ${signal.riskNote || 'Эрсдэлээ заавал хязгаарла.'}`;
+};
+
+const safeParseSignal = (rawContent) => {
+  try {
+    const parsed = JSON.parse(rawContent);
+    return parsed?.signal ? parsed.signal : parsed;
+  } catch {
+    const match = String(rawContent || '').match(/\{[\s\S]*\}/);
+    if (!match) return null;
+    try {
+      const parsed = JSON.parse(match[0]);
+      return parsed?.signal ? parsed.signal : parsed;
+    } catch {
+      return null;
+    }
+  }
+};
+
 // Initialize Groq client
 let groq = null;
 if (process.env.GROQ_API_KEY) {
@@ -439,6 +532,115 @@ Timeframe: ${timeframe || 'Тодорхойгүй'}
   }
 };
 
+// ─── POST /api/ai/chat ───────────────────────────────────────────────
+const chat = async (req, res, next) => {
+  try {
+    const { message = '', imageUrl = '', pair = '', timeframe = '' } = req.body;
+    const cleanMessage = String(message || '').trim();
+    const cleanImageUrl = String(imageUrl || '').trim();
+
+    if (!cleanMessage && !cleanImageUrl) {
+      return res.status(400).json({ error: 'Асуулт эсвэл chart зураг оруулна уу.' });
+    }
+
+    let content;
+    let signal;
+    let provider = 'GROQ';
+
+    if (!groq) {
+      provider = 'LOCAL';
+      signal = buildFallbackSignal({ message: cleanMessage, hasImage: Boolean(cleanImageUrl) });
+      content = signal.text;
+    } else {
+      try {
+        const userContent = [
+          {
+            type: 'text',
+            text: `Хэрэглэгчийн асуулт: ${cleanMessage || 'Chart зураг дээр signal шинжилгээ хий.'}
+
+Pair: ${pair || 'тодорхойгүй'}
+Timeframe: ${timeframe || 'тодорхойгүй'}
+Strategy stack: ${STRATEGY_STACK.join(', ')}
+
+Chart дээрх setup-ийг эдгээр strategy-гаар шүүж, response-оо зөвхөн JSON object хэлбэрээр буцаа.`,
+          },
+        ];
+
+        if (cleanImageUrl) {
+          userContent.push({
+            type: 'image_url',
+            image_url: { url: cleanImageUrl },
+          });
+        }
+
+        const completion = await groq.chat.completions.create({
+          model: process.env.GROQ_VISION_MODEL || 'meta-llama/llama-4-scout-17b-16e-instruct',
+          messages: [
+            {
+              role: 'system',
+              content: `Чи forex/crypto chart дээр CRT, SMC, QM, Head & Shoulders, ICT, Key Level, Fibonacci Golden Zone, POI, Candle Pattern, Breakout, Chart Pattern, IDM, Liquidity Sweep аргачлалаар signal scenario гаргадаг AI.
+
+Зорилго:
+- Chart зураг дээр trend, market structure, key level, liquidity, POI, order block/FVG байж болох zone, Fibonacci golden zone, breakout/retest, candle confirmation, chart pattern, IDM/BOS/CHoCH, sweep зэргийг үнэл.
+- BUY / SELL / WAIT bias өг. Setup хангалтгүй бол WAIT.
+- BUY setup: stopLoss нь entryZone-оос ЗААВАЛ доод price-д байна, chart annotation дээр entryZone-оос доор (larger y) зурагдана. takeProfits нь entryZone-оос дээш price-д байна, annotation дээр entryZone-оос дээр (smaller y) зурагдана.
+- SELL setup: stopLoss нь entryZone-оос ЗААВАЛ дээд price-д байна, annotation дээр entryZone-оос дээр (smaller y) зурагдана. takeProfits нь entryZone-оос доош price-д байна, annotation дээр entryZone-оос доор (larger y) зурагдана.
+- Хэрэв price bullish entry/POI zone-оо доош хүчтэй эвдээд reclaim хийгээгүй байвал BUY гэж бүү өг. WAIT эсвэл SELL scenario гэж үнэл.
+- Хэрэв price bearish entry/POI zone-оо дээш хүчтэй эвдээд reclaim хийгээгүй байвал SELL гэж бүү өг. WAIT эсвэл BUY scenario гэж үнэл.
+- Probability нь "явах магадлал" биш, strategy checklist confidence юм. 30-85 хооронд бодитой өг. 90+ бараг бүү өг.
+- Баталгаатай ашиг амлахгүй. Зөвхөн chart-based scenario.
+- Текст бүгд Монгол хэлээр, богино тодорхой.
+
+ЗӨВХӨН valid JSON буцаа. Markdown бүү хэрэглэ.
+Schema:
+{
+  "bias": "BUY" | "SELL" | "WAIT",
+  "probability": number,
+  "entryZone": "text",
+  "stopLoss": "text",
+  "takeProfits": ["text"],
+  "invalidation": "text",
+  "summary": "1-2 sentence Mongolian summary",
+  "strategies": [{"name":"SMC","verdict":"bullish|bearish|neutral","note":"short Mongolian note"}],
+  "reasons": ["3-5 short Mongolian bullets"],
+  "riskNote": "short Mongolian risk note",
+  "annotations": [
+    {"type":"zone","label":"ENTRY","color":"#3b82f6","x":0.65,"y":0.30,"w":0.18,"h":0.35},
+    {"type":"line","label":"SL","color":"#ef4444","x1":0.62,"y1":0.22,"x2":0.90,"y2":0.22},
+    {"type":"line","label":"TP1","color":"#10b981","x1":0.62,"y1":0.55,"x2":0.90,"y2":0.55},
+    {"type":"label","label":"Liquidity sweep","color":"#f59e0b","x":0.45,"y":0.18}
+  ]
+}
+
+Annotation coordinates must be normalized 0-1 relative to the image. Use approximate visible positions only.`,
+            },
+            {
+              role: 'user',
+              content: userContent,
+            },
+          ],
+          temperature: 0.25,
+          max_tokens: 1400,
+          response_format: { type: 'json_object' },
+        });
+
+        const rawContent = completion.choices?.[0]?.message?.content || '';
+        signal = safeParseSignal(rawContent);
+        content = signalToText(signal) || rawContent || 'AI хариу хоосон ирлээ.';
+      } catch (error) {
+        if (!isProviderUnavailable(error)) throw error;
+        provider = 'LOCAL';
+        signal = buildFallbackSignal({ message: cleanMessage, hasImage: Boolean(cleanImageUrl) });
+        content = signal.text;
+      }
+    }
+
+    res.json({ content, signal, provider });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // ─── GET /api/ai/analyses ───────────────────────────────────────────
 const getAnalyses = async (req, res, next) => {
   try {
@@ -458,5 +660,6 @@ module.exports = {
   createSubscription,
   analyzeTrades,
   analyzeChart,
+  chat,
   getAnalyses,
 };
