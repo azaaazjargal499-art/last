@@ -1,4 +1,4 @@
-// smart-inventory/frontend/src/pages/Register.jsx
+﻿// smart-inventory/frontend/src/pages/Register.jsx
 import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { Activity, ArrowRight, BadgeDollarSign, LockKeyhole, Mail, UserRound } from 'lucide-react';
@@ -100,7 +100,7 @@ export default function Register() {
               <Activity className="h-6 w-6" />
             </div>
             <div>
-              <div className="font-display text-lg font-extrabold leading-6">Smart Inventory</div>
+              <div className="font-display text-lg font-extrabold leading-6">Trade Journal</div>
               <div className="text-sm font-medium leading-5 text-slate-400">Forex Trading Journal</div>
             </div>
           </div>

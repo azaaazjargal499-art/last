@@ -259,16 +259,16 @@ export default function Trades() {
   const monthPositive = monthStats.totalPnL >= 0;
 
   return (
-    <div className="space-y-6 animate-slide-up">
+    <div className="space-y-4 animate-slide-up sm:space-y-6">
       <section className="overflow-hidden rounded-[28px] border border-white/10 bg-white/[0.04] shadow-2xl shadow-black/20 backdrop-blur-xl">
-        <div className="relative border-b border-white/10 p-5 sm:p-6">
+        <div className="relative border-b border-white/10 p-4 sm:p-6">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_15%_10%,rgba(16,185,129,0.18),transparent_32%),radial-gradient(circle_at_85%_20%,rgba(59,130,246,0.16),transparent_30%)]" />
           <div className="relative flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
             <div>
               <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1 text-xs font-bold text-emerald-200">
                 Trading calendar
               </div>
-              <h1 className="font-display text-3xl font-bold tracking-tight text-white">Арилжааны календарь</h1>
+              <h1 className="font-display text-2xl font-bold tracking-tight text-white sm:text-3xl">Арилжааны календарь</h1>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
                 Өдөр, долоо хоног, сарын P&L-ээ нэг дэлгэц дээр өнгөөр нь ялгаж харна.
               </p>
@@ -317,7 +317,7 @@ export default function Trades() {
               <select
                 value={filter.status}
                 onChange={(event) => setFilter((current) => ({ ...current, status: event.target.value }))}
-                className="rounded-xl border border-white/10 bg-slate-950/40 px-3 py-2.5 text-slate-200 outline-none hover:bg-slate-950/60"
+                className="min-w-0 flex-1 rounded-xl border border-white/10 bg-slate-950/40 px-3 py-2.5 text-slate-200 outline-none hover:bg-slate-950/60 sm:flex-none"
               >
                 <option value="">Бүх статус</option>
                 <option value="OPEN">Нээлттэй</option>
@@ -326,7 +326,7 @@ export default function Trades() {
               <select
                 value={filter.pair}
                 onChange={(event) => setFilter((current) => ({ ...current, pair: event.target.value }))}
-                className="rounded-xl border border-white/10 bg-slate-950/40 px-3 py-2.5 text-slate-200 outline-none hover:bg-slate-950/60"
+                className="min-w-0 flex-1 rounded-xl border border-white/10 bg-slate-950/40 px-3 py-2.5 text-slate-200 outline-none hover:bg-slate-950/60 sm:flex-none"
               >
                 <option value="">Бүх пар</option>
                 {tradePairs.map((pair) => <option key={pair} value={pair}>{pair}</option>)}
@@ -336,7 +336,7 @@ export default function Trades() {
               </button>
               <button
                 onClick={() => openCreate()}
-                className="inline-flex items-center gap-2 rounded-xl bg-emerald-400 px-4 py-2.5 text-sm font-extrabold text-slate-950 shadow-lg shadow-emerald-950/30 hover:bg-emerald-300"
+                className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-400 px-4 py-2.5 text-sm font-extrabold text-slate-950 shadow-lg shadow-emerald-950/30 hover:bg-emerald-300 sm:flex-none"
               >
                 <Plus className="h-4 w-4" />
                 Арилжаа нэмэх
@@ -344,10 +344,10 @@ export default function Trades() {
             </div>
           </div>
 
-          <div className="grid grid-cols-[minmax(820px,1fr)_128px] gap-3 overflow-x-auto pb-1">
-            <div className="grid grid-cols-7 gap-3">
+          <div className="grid grid-cols-1 gap-3 xl:grid-cols-[minmax(0,1fr)_128px]">
+            <div className="grid grid-cols-7 gap-1.5 sm:gap-3">
               {dayLabels.map((day) => (
-                <div key={day} className="rounded-2xl border border-white/10 bg-white/[0.06] py-3 text-center text-xs font-extrabold text-slate-300">
+                <div key={day} className="rounded-xl border border-white/10 bg-white/[0.06] py-2 text-center text-[10px] font-extrabold text-slate-300 sm:rounded-2xl sm:py-3 sm:text-xs">
                   {day}
                 </div>
               ))}
@@ -365,7 +365,7 @@ export default function Trades() {
                     key={day.toISOString()}
                     onClick={() => setSelectedDate(day)}
                     onDoubleClick={() => openCreate(day)}
-                    className={`group relative flex min-h-[7.25rem] flex-col overflow-hidden rounded-2xl border p-3 text-left transition-all duration-200 xl:min-h-[7.75rem] ${
+                    className={`group relative flex min-h-[4.8rem] flex-col overflow-hidden rounded-xl border p-1.5 text-left transition-all duration-200 sm:min-h-[7.25rem] sm:rounded-2xl sm:p-3 xl:min-h-[7.75rem] ${
                       hasTrades
                         ? positive
                           ? 'border-emerald-300/50 bg-emerald-400/[0.13] shadow-[0_0_0_1px_rgba(52,211,153,0.12),0_18px_40px_rgba(16,185,129,0.08)]'
@@ -373,27 +373,28 @@ export default function Trades() {
                         : inMonth
                           ? 'border-white/10 bg-white/[0.045] hover:border-white/20 hover:bg-white/[0.075]'
                           : 'border-white/[0.05] bg-white/[0.018]'
-                    } ${active ? 'ring-2 ring-cyan-300/70' : ''}`}
+                    } ${active ? 'ring-2 ring-emerald-300/70' : ''}`}
                   >
                     <div className="absolute inset-0 opacity-0 transition-opacity group-hover:opacity-100 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.12),transparent_42%)]" />
-                    <div className="relative z-10 flex h-8 items-start justify-between">
-                      <span className={`inline-flex h-7 min-w-7 items-center justify-center rounded-lg text-sm font-extrabold leading-none ${active ? 'bg-cyan-300 text-cyan-950' : inMonth ? 'text-slate-200' : 'text-slate-600'}`}>
+                    <div className="relative z-10 flex h-7 items-start justify-between sm:h-8">
+                      <span className={`inline-flex h-6 min-w-6 items-center justify-center rounded-lg text-xs font-extrabold leading-none sm:h-7 sm:min-w-7 sm:text-sm ${active ? 'bg-emerald-300 text-emerald-950' : inMonth ? 'text-slate-200' : 'text-slate-600'}`}>
                         {format(day, 'dd')}
                       </span>
                       {hasTrades && (
-                        <div className={`grid h-7 w-7 place-items-center rounded-lg ${positive ? 'bg-emerald-300/20 text-emerald-200' : 'bg-rose-300/20 text-rose-200'}`}>
-                          <CalendarDays className="h-3.5 w-3.5" />
+                        <div className={`grid h-6 w-6 place-items-center rounded-lg sm:h-7 sm:w-7 ${positive ? 'bg-emerald-300/20 text-emerald-200' : 'bg-rose-300/20 text-rose-200'}`}>
+                          <CalendarDays className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                         </div>
                       )}
                     </div>
 
                     {hasTrades && (
-                      <div className="relative z-10 mt-auto pt-4">
-                        <div className={`font-mono text-[19px] font-black leading-none tracking-tight ${positive ? 'text-emerald-200' : 'text-rose-200'}`}>
+                      <div className="relative z-10 mt-auto pt-2 sm:pt-4">
+                        <div className={`number-value hidden truncate font-black leading-none sm:block sm:text-[19px] ${positive ? 'text-emerald-200' : 'text-rose-200'}`}>
                           {compactMoney(pnl)}
                         </div>
-                        <div className={`mt-3 inline-flex rounded-full px-2.5 py-1 text-[11px] font-extrabold leading-none ${positive ? 'bg-emerald-300 text-emerald-950' : 'bg-rose-300 text-rose-950'}`}>
-                          {dayTrades.length} trades
+                        <div className={`inline-flex rounded-full px-1.5 py-0.5 text-[10px] font-extrabold leading-none sm:mt-3 sm:px-2.5 sm:py-1 sm:text-[11px] ${positive ? 'bg-emerald-300 text-emerald-950' : 'bg-rose-300 text-rose-950'}`}>
+                          <span className="sm:hidden">{dayTrades.length}</span>
+                          <span className="hidden sm:inline">{dayTrades.length} trades</span>
                         </div>
                       </div>
                     )}
@@ -402,14 +403,14 @@ export default function Trades() {
               })}
             </div>
 
-            <div className="pt-[52px]">
-              <div className="grid gap-3">
+            <div className="pt-0 xl:pt-[52px]">
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 xl:grid-cols-1 xl:gap-3">
                 {weekStats.map((week) => {
                   const positive = week.pnl >= 0;
                   return (
-                    <div key={week.label} className="flex min-h-[7.25rem] flex-col justify-center rounded-2xl border border-white/10 bg-white/[0.055] p-4 shadow-sm xl:min-h-[7.75rem]">
+                    <div key={week.label} className="flex min-h-[5.5rem] flex-col justify-center rounded-2xl border border-white/10 bg-white/[0.055] p-3 shadow-sm xl:min-h-[7.75rem] xl:p-4">
                       <div className="text-xs font-extrabold text-slate-400">{week.label}</div>
-                      <div className={`mt-2 font-mono text-xl font-black ${positive ? 'text-emerald-300' : 'text-rose-300'}`}>{compactMoney(week.pnl)}</div>
+                      <div className={`number-value mt-2 text-xl font-black ${positive ? 'text-emerald-300' : 'text-rose-300'}`}>{compactMoney(week.pnl)}</div>
                       <div className="mt-3 w-fit rounded-full bg-white/10 px-2.5 py-1 text-[11px] font-bold text-slate-300">{week.trades} trades</div>
                     </div>
                   );
@@ -472,7 +473,7 @@ export default function Trades() {
                     <Metric label="Lot" value={trade.lotSize} />
                     <div>
                       <div className="text-xs font-semibold text-slate-500">P&L</div>
-                      <div className={`mt-1 font-mono text-sm font-black ${Number(trade.pnl || 0) >= 0 ? 'text-emerald-300' : 'text-rose-300'}`}>
+                      <div className={`number-value mt-1 text-sm font-black ${Number(trade.pnl || 0) >= 0 ? 'text-emerald-300' : 'text-rose-300'}`}>
                         {trade.pnl !== null ? formatPnL(trade.pnl) : '-'}
                       </div>
                     </div>
@@ -694,7 +695,7 @@ export default function Trades() {
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <div className={`rounded-2xl border px-4 py-2 font-mono text-sm font-black ${
+                  <div className={`number-value rounded-2xl border px-4 py-2 text-sm font-black ${
                     Number(previewTrade.pnl || 0) >= 0
                       ? 'border-emerald-300/20 bg-emerald-400/10 text-emerald-200'
                       : 'border-rose-300/20 bg-rose-400/10 text-rose-200'
@@ -764,7 +765,7 @@ function HeroStat({ label, value, positive }) {
   return (
     <div className="rounded-2xl border border-white/10 bg-slate-950/35 p-4">
       <div className="text-xs font-bold uppercase tracking-wide text-slate-500">{label}</div>
-      <div className={`mt-2 font-mono text-xl font-black ${valueClass}`}>{value}</div>
+      <div className={`number-value mt-2 text-xl font-black ${valueClass}`}>{value}</div>
     </div>
   );
 }
@@ -792,7 +793,7 @@ function SummaryRow({ label, value, positive }) {
   return (
     <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-slate-950/35 px-4 py-3">
       <span className="text-sm font-semibold text-slate-400">{label}</span>
-      <span className={`font-mono text-sm font-black ${valueClass}`}>{value}</span>
+      <span className={`number-value text-sm font-black ${valueClass}`}>{value}</span>
     </div>
   );
 }

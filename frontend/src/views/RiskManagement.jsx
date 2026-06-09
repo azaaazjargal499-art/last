@@ -271,7 +271,7 @@ export default function RiskManagement() {
               <h3 className="font-display font-semibold text-white">Баланс өсөлтийн зураглал</h3>
             </div>
             <div className="text-right text-xs text-[var(--text-muted)]">
-              {growthView === 'setup' ? `${selectedGrowthMode.label} бүр Setup TP` : selectedGrowthMode.title}: <span className="font-mono text-green-300">{activeGrowthPercent.toFixed(1)}%</span>
+              {growthView === 'setup' ? `${selectedGrowthMode.label} бүр Setup TP` : selectedGrowthMode.title}: <span className="number-value text-green-300">{activeGrowthPercent.toFixed(1)}%</span>
             </div>
           </div>
 
@@ -379,7 +379,7 @@ export default function RiskManagement() {
               <div key={`${row.period}-${row.unit}`} className="grid grid-cols-[72px_1fr_1fr] items-center border-t border-white/10 px-3 py-2.5 text-sm">
                 <span className="font-semibold text-white">{row.period} {row.unit}</span>
                 <div>
-                  <div className="font-mono font-bold text-white">{formatCurrency(row.projectedBalance)}</div>
+                  <div className="number-value font-bold text-white">{formatCurrency(row.projectedBalance)}</div>
                   <div className="text-xs font-semibold text-green-300">
                     +{formatCurrency(row.profit)} ({row.profitPercent.toFixed(1)}%)
                   </div>
@@ -387,10 +387,10 @@ export default function RiskManagement() {
                 <div className="text-right">
                   {row.hasLotModel ? (
                     <>
-                      <div className={`font-mono font-bold ${row.isBelowMinimumLot ? 'text-amber-300' : 'text-primary-300'}`}>
+                      <div className={`number-value font-bold ${row.isBelowMinimumLot ? 'text-amber-300' : 'text-primary-300'}`}>
                         {formatLot(row.displayLot)} lot{row.isBelowMinimumLot ? ' min' : ''}
                       </div>
-                      <div className="text-xs font-mono text-amber-200">
+                      <div className="number-value text-xs text-amber-200">
                         {formatCurrency(row.displayRiskAmount)} ({row.displayRiskPercent.toFixed(1)}%)
                       </div>
                     </>
@@ -426,7 +426,7 @@ function ResultRow({ label, value, color }) {
   return (
     <div className="flex items-center justify-between gap-3 py-1 text-sm">
       <span className="text-[var(--text-muted)]">{label}</span>
-      <span className={`text-right font-mono ${color}`}>{value}</span>
+      <span className={`number-value text-right ${color}`}>{value}</span>
     </div>
   );
 }
@@ -435,7 +435,7 @@ function MiniStat({ label, value, positive = false }) {
   return (
     <div className="rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2">
       <div className="text-[11px] font-semibold text-[var(--text-muted)]">{label}</div>
-      <div className={`mt-1 font-mono text-sm font-bold ${positive ? 'text-green-300' : 'text-white'}`}>{value}</div>
+      <div className={`number-value mt-1 text-sm font-bold ${positive ? 'text-green-300' : 'text-white'}`}>{value}</div>
     </div>
   );
 }

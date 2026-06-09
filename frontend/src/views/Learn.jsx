@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useState } from 'react';
 import { BookOpenCheck, Crown, Lock, Play, Search, Video, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { lessonService } from '@/services/index';
@@ -31,7 +31,7 @@ const getEmbedUrl = (url) => {
 function LessonCard({ lesson, onOpen }) {
   return (
     <div
-      className="group overflow-hidden rounded-2xl border border-white/10 bg-white/[0.06] text-left shadow-xl shadow-black/10 backdrop-blur-xl transition hover:-translate-y-1 hover:border-blue-300/40"
+      className="group overflow-hidden rounded-2xl border border-white/10 bg-white/[0.06] text-left shadow-xl shadow-black/10 backdrop-blur-xl transition hover:-translate-y-1 hover:border-emerald-300/40"
     >
       <button
         type="button"
@@ -42,8 +42,8 @@ function LessonCard({ lesson, onOpen }) {
         {lesson.thumbnailUrl ? (
           <img src={lesson.thumbnailUrl} alt={lesson.title} className="h-full w-full object-cover transition duration-300 group-hover:scale-105" />
         ) : (
-          <div className="grid h-full place-items-center bg-[radial-gradient(circle_at_30%_20%,rgba(59,130,246,0.35),transparent_32%),linear-gradient(135deg,#0f172a,#172554)]">
-            <Video className="h-12 w-12 text-blue-200" />
+          <div className="grid h-full place-items-center bg-[radial-gradient(circle_at_30%_20%,rgba(52,211,153,0.26),transparent_32%),linear-gradient(135deg,#0f172a,#12312b)]">
+            <Video className="h-12 w-12 text-emerald-200" />
           </div>
         )}
         <div className="absolute left-3 top-3 flex gap-2">
@@ -61,7 +61,7 @@ function LessonCard({ lesson, onOpen }) {
           )}
         </div>
         <div className="lesson-media-overlay absolute inset-0 grid place-items-center transition">
-          <div className="grid h-14 w-14 place-items-center rounded-full bg-white/90 text-blue-600 shadow-xl transition group-hover:scale-105">
+          <div className="grid h-14 w-14 place-items-center rounded-full bg-white/90 text-emerald-600 shadow-xl transition group-hover:scale-105">
             {lesson.locked ? <Lock className="h-6 w-6" /> : <Play className="ml-0.5 h-6 w-6 fill-current" />}
           </div>
         </div>
@@ -69,7 +69,7 @@ function LessonCard({ lesson, onOpen }) {
       </button>
       <div className="p-5">
         <div className="mb-2 flex items-center justify-between gap-3">
-          <span className="rounded-full bg-blue-300/10 px-2.5 py-1 text-xs font-black text-blue-200">
+          <span className="rounded-full bg-emerald-300/10 px-2.5 py-1 text-xs font-black text-emerald-200">
             {lesson.level === 'ADVANCED' ? 'Ахисан шат' : 'Анхан шат'}
           </span>
           {lesson.duration && <span className="text-xs font-bold text-slate-500">{lesson.duration}</span>}
@@ -79,13 +79,13 @@ function LessonCard({ lesson, onOpen }) {
           <p className="mt-3 line-clamp-2 text-sm font-semibold leading-6 text-slate-400">{lesson.description}</p>
         )}
         <div className="mt-4 text-xs font-bold text-slate-500">
-          {lesson.author?.username || 'Smart Inventory'}
+          {lesson.author?.username || 'Trade Journal'}
         </div>
         {!lesson.locked && (
           <button
             type="button"
             onClick={() => onOpen(lesson)}
-            className="mt-4 inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-blue-600 text-xs font-black text-white hover:bg-blue-500"
+            className="mt-4 inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-emerald-400 text-xs font-black text-slate-950 hover:bg-emerald-300"
           >
             <Play className="h-4 w-4 fill-current" />
             Үзэх
@@ -139,39 +139,39 @@ export default function Learn() {
 
   return (
     <div className="space-y-6 animate-slide-up">
-      <section className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.06] shadow-xl shadow-black/10 backdrop-blur-xl">
-        <div className="grid gap-5 bg-[radial-gradient(circle_at_8%_0%,rgba(59,130,246,0.16),transparent_34%),linear-gradient(135deg,rgba(255,255,255,0.08),rgba(255,255,255,0.02))] p-6 lg:grid-cols-[1fr_auto] lg:items-center">
+      <section className="overflow-hidden rounded-[24px] border border-white/10 bg-white/[0.06] shadow-xl shadow-black/10 backdrop-blur-xl">
+        <div className="grid gap-4 bg-[radial-gradient(circle_at_8%_0%,rgba(52,211,153,0.13),transparent_34%),linear-gradient(135deg,rgba(255,255,255,0.075),rgba(255,255,255,0.02))] p-4 sm:p-5 lg:grid-cols-[1fr_auto] lg:items-start">
           <div>
-            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-blue-300/20 bg-blue-300/10 px-3 py-1 text-xs font-black text-blue-200">
+            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-emerald-300/20 bg-emerald-300/10 px-3 py-1 text-xs font-black text-emerald-200">
               <BookOpenCheck className="h-4 w-4" />
               Trading education
             </div>
-            <h1 className="font-sans text-3xl font-extrabold tracking-normal text-white">Өөрийгөө хөгжүүлэх</h1>
+            <h1 className="font-sans text-xl font-extrabold tracking-normal text-white">Өөрийгөө хөгжүүлэх</h1>
             <p className="mt-2 max-w-2xl text-sm font-medium leading-6 text-slate-400">
               Анхан шатнаас ахисан шат хүртэл видео хичээлүүдээ дарааллаар үзэж, арилжааны арга барилаа системтэй хөгжүүлээрэй.
             </p>
           </div>
-          <div className="relative w-full lg:w-80">
+          <div className="relative w-full lg:w-72">
             <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
             <input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Хичээл хайх"
-              className="h-12 w-full rounded-xl border border-white/10 bg-white/[0.08] pl-11 pr-4 text-sm font-semibold text-white outline-none placeholder:text-slate-500 focus:border-blue-300/50"
+              className="h-11 w-full rounded-xl border border-white/10 bg-white/[0.08] pl-11 pr-4 text-sm font-semibold text-white outline-none placeholder:text-slate-500 focus:border-emerald-300/50"
             />
           </div>
         </div>
       </section>
 
-      <div className="flex flex-wrap gap-2">
+      <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
         {tabs.map((tab) => (
           <button
             key={tab.id}
             type="button"
             onClick={() => setActiveTab(tab.id)}
-            className={`rounded-xl px-5 py-3 text-sm font-extrabold transition ${
+            className={`rounded-xl px-3 py-2.5 text-sm font-extrabold transition sm:px-5 sm:py-3 ${
               activeTab === tab.id
-                ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20'
+                ? 'bg-emerald-400 text-slate-950 shadow-lg shadow-emerald-950/20'
                 : 'border border-white/10 bg-white/[0.06] text-slate-300 hover:bg-white/[0.1]'
             }`}
           >

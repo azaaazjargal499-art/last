@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import {
@@ -22,7 +22,7 @@ import { useAuthStore } from '@/store/authStore';
 const inputClass = 'h-14 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 pl-12 text-[15px] font-bold leading-none text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100';
 
 const startGoogleSignIn = () => {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || '/_/smart-inventory-api/api';
   const frontendUrl = encodeURIComponent(window.location.origin);
   window.location.href = `${apiUrl}/auth/google?frontend_url=${frontendUrl}`;
 };
@@ -56,7 +56,7 @@ function BrandLogo({ dark = false }) {
       </div>
       <div>
         <div className={`font-display text-xl font-black leading-5 ${dark ? 'text-white' : 'text-slate-950'}`}>Disciplinex</div>
-        <div className={`text-sm font-bold leading-5 ${dark ? 'text-slate-400' : 'text-slate-500'}`}>Smart Inventory</div>
+        <div className={`text-sm font-bold leading-5 ${dark ? 'text-slate-400' : 'text-slate-500'}`}>Trade Journal</div>
       </div>
     </div>
   );
@@ -81,7 +81,7 @@ function BrandPreview() {
           Арилжаагаа датагаар хяна.
         </h1>
         <p className="mt-6 max-w-2xl text-lg font-medium leading-8 text-slate-300">
-          Smart Inventory нь MT5 sync, journal, analytics, risk management, strategy tracker, AI review-ийг нэг workspace дотор нэгтгэнэ.
+          Trade Journal нь MT5 sync, journal, analytics, risk management, strategy tracker, AI review-ийг нэг workspace дотор нэгтгэнэ.
         </p>
       </div>
 
@@ -241,7 +241,7 @@ export default function Auth() {
               </h2>
               <p className="mt-3 text-base font-medium leading-7 text-slate-500">
                 {isLogin
-                  ? 'Өөрийн Smart Inventory workspace руугаа нэвтэрч journal, analytics, AI review-ээ үргэлжлүүл.'
+                  ? 'Өөрийн Trade Journal workspace руугаа нэвтэрч journal, analytics, AI review-ээ үргэлжлүүл.'
                   : 'Шинэ trading journal үүсгээд арилжаагаа эхний өдрөөсөө датагаар хяна.'}
               </p>
             </div>

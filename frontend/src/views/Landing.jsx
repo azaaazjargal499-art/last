@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ArrowRight,
@@ -98,7 +98,7 @@ function Logo() {
       </div>
       <div className="min-w-0">
         <div className="text-lg font-black leading-5 text-slate-950">Disciplinex</div>
-        <div className="text-sm font-semibold leading-5 text-slate-500">Smart Inventory Trading Journal</div>
+        <div className="text-sm font-semibold leading-5 text-slate-500">Trade Journal</div>
       </div>
     </div>
   );
@@ -124,7 +124,7 @@ function HeroMockup() {
         <div className="rounded-[28px] bg-slate-950 p-5 text-white">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <p className="text-xs font-black uppercase tracking-[0.34em] text-emerald-300">Smart Inventory</p>
+              <p className="text-xs font-black uppercase tracking-[0.34em] text-emerald-300">Trade Journal</p>
               <h2 className="mt-3 text-3xl font-black tracking-tight md:text-4xl">Өнөөдрийн арилжааны зураглал</h2>
             </div>
             <div className="rounded-full bg-emerald-400 px-4 py-2 text-sm font-black text-slate-950">+ $800.00</div>
@@ -398,7 +398,7 @@ export default function Landing() {
                 Арилжаагаа нэг дор цэгцтэй хяна.
               </h1>
               <p className="mt-7 max-w-2xl text-xl font-medium leading-9 text-slate-600">
-                Smart Inventory бол trader-д зориулсан journal систем. MT5 sync, trade calendar, live chart, screenshot, strategy tracking, risk management, AI review бүгд нэг workspace дотор ажиллана.
+                Trade Journal бол trader-д зориулсан journal систем. MT5 sync, trade calendar, live chart, screenshot, strategy tracking, risk management, AI review бүгд нэг workspace дотор ажиллана.
               </p>
               <div className="mt-9 flex flex-col gap-4 sm:flex-row">
                 <ChameleonButton onClick={() => navigate('/auth')} className="h-14 px-7 text-base">

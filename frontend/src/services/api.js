@@ -2,8 +2,12 @@
 import axios from 'axios';
 import toast from 'react-hot-toast';
 
+const defaultApiUrl = typeof window === 'undefined'
+  ? 'http://localhost:5000/api'
+  : '/_/smart-inventory-api/api';
+
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api',
+  baseURL: process.env.NEXT_PUBLIC_API_URL || defaultApiUrl,
   timeout: 15000,
   headers: { 'Content-Type': 'application/json' },
 });

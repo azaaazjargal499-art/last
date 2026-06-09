@@ -1,7 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { Brain, Camera, Maximize2 } from 'lucide-react';
+﻿import { useEffect, useMemo, useRef, useState } from 'react';
+import { Maximize2 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import AIAssistantChat from '@/components/ai/AIAssistantChat';
 import { getUserPairs } from '@/utils/formatters';
 import { useAuthStore } from '@/store/authStore';
 
@@ -37,9 +36,6 @@ const DEFAULT_WATCHLIST = [
   'BINANCE:ETHUSDT',
   'BINANCE:SOLUSDT',
 ];
-
-const aiPrompt = () =>
-  'TradingView chart screenshot дээр CRT, SMC, ICT, QM, Head & Shoulders, key level, Fibonacci golden zone, POI, candle pattern, breakout, IDM, liquidity sweep checklist-ээр entry санаа гарга. BUY/SELL/WAIT bias, probability, entry zone, SL, TP-г товч тодорхой Монгол хэлээр тайлбарла.';
 
 const getChartTheme = () => {
   if (typeof document === 'undefined') return 'light';
@@ -156,38 +152,6 @@ function applyTradingViewTheme(widget, theme) {
   }
 }
 
-async function captureScreenFrame() {
-  if (!navigator.mediaDevices?.getDisplayMedia) {
-    throw new Error('SCREEN_CAPTURE_UNSUPPORTED');
-  }
-
-  const stream = await navigator.mediaDevices.getDisplayMedia({
-    video: { displaySurface: 'browser' },
-    audio: false,
-  });
-
-  try {
-    const video = document.createElement('video');
-    video.srcObject = stream;
-    video.muted = true;
-    await video.play();
-
-    await new Promise((resolve) => {
-      if (video.videoWidth) resolve();
-      else video.onloadedmetadata = resolve;
-    });
-
-    const canvas = document.createElement('canvas');
-    canvas.width = video.videoWidth || 1600;
-    canvas.height = video.videoHeight || 900;
-    const ctx = canvas.getContext('2d');
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    return canvas.toDataURL('image/jpeg', 0.88);
-  } finally {
-    stream.getTracks().forEach((track) => track.stop());
-  }
-}
-
 export default function LiveChart() {
   const { user } = useAuthStore();
   const pairs = getUserPairs(user);
@@ -195,9 +159,6 @@ export default function LiveChart() {
   const symbol = brokerSymbols[initialPair] || `OANDA:${initialPair.replace('/', '')}`;
   const [theme, setTheme] = useState(getChartTheme);
   const fullscreenRef = useRef(null);
-  const [capture, setCapture] = useState(null);
-  const [isAiOpen, setIsAiOpen] = useState(false);
-  const [isCapturing, setIsCapturing] = useState(false);
 
   useEffect(() => {
     const observer = new MutationObserver(() => {
@@ -219,84 +180,35 @@ export default function LiveChart() {
     };
   }, []);
 
-  const handleCaptureForAi = async () => {
-    try {
-      setIsCapturing(true);
-      const image = await captureScreenFrame();
-      setCapture({ image, createdAt: Date.now() });
-      setIsAiOpen(true);
-      toast.success('Chart screenshot AI-д бэлэн боллоо.');
-    } catch (error) {
-      if (error.name === 'NotAllowedError') {
-        toast.error('Screenshot хийхийн тулд current tab/window сонгох хэрэгтэй.');
-      } else {
-        toast.error('Screen capture ажиллахгүй байна. Screenshot-оо AI chat руу upload хийж болно.');
-      }
-    } finally {
-      setIsCapturing(false);
-    }
-  };
-
   const openFullscreen = async () => {
     try {
       await fullscreenRef.current?.requestFullscreen?.();
     } catch {
-      toast.error('Fullscreen нээж чадсангүй.');
+      toast.error('Дэлгэц дүүргэж чадсангүй.');
     }
   };
 
   return (
-    <div className="animate-slide-up">
+    <div className="animate-slide-up space-y-3">
+      <div className="flex justify-end">
+        <button
+          type="button"
+          onClick={openFullscreen}
+          className="live-chart-ghost-btn inline-flex h-10 items-center gap-2 rounded-xl border px-3 text-xs font-black"
+        >
+          <Maximize2 className="h-4 w-4" />
+          Fullscreen
+        </button>
+      </div>
+
       <section
         ref={fullscreenRef}
         className="live-chart-shell overflow-hidden rounded-2xl border backdrop-blur-xl"
       >
-        <div className="live-chart-toolbar flex min-h-[58px] flex-wrap items-center justify-end gap-2 border-b px-4 py-2 backdrop-blur-xl sm:px-6">
-          <button
-            type="button"
-            onClick={openFullscreen}
-            className="live-chart-ghost-btn inline-flex h-10 items-center gap-2 rounded-xl border px-3 text-xs font-black"
-          >
-            <Maximize2 className="h-4 w-4" />
-            Fullscreen
-          </button>
-          <button
-            type="button"
-            onClick={handleCaptureForAi}
-            disabled={isCapturing}
-            className="live-chart-primary-btn inline-flex h-10 items-center gap-2 rounded-xl px-4 text-xs font-black disabled:opacity-60"
-          >
-            <Camera className="h-4 w-4" />
-            {isCapturing ? 'Capturing...' : 'Screenshot AI'}
-          </button>
-          <button
-            type="button"
-            onClick={() => setIsAiOpen(true)}
-            className="live-chart-ai-btn inline-flex h-10 items-center gap-2 rounded-xl px-4 text-xs font-black"
-          >
-            <Brain className="h-4 w-4" />
-            AI chat
-          </button>
-        </div>
-
-        <div className="live-chart-frame h-[calc(100dvh-11rem)] min-h-[620px]">
+        <div className="live-chart-frame h-[calc(100dvh-10.25rem)] min-h-[650px]">
           <TradingViewWidget key={`${symbol}-${theme}`} symbol={symbol} theme={theme} />
         </div>
       </section>
-
-      {isAiOpen && (
-        <div className="fixed inset-y-3 right-3 z-50 sm:inset-y-4 sm:right-4 lg:right-7">
-          <AIAssistantChat
-            key={capture?.createdAt || 'live-chart-ai'}
-            compact
-            onClose={() => setIsAiOpen(false)}
-            initialImage={capture?.image}
-            initialPair={initialPair}
-            initialTimeframe="H1"
-            initialPrompt={aiPrompt()}
-          />
-        </div>
-      )}
     </div>
   );
 }

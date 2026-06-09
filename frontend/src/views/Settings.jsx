@@ -117,8 +117,8 @@ export default function Settings() {
               </label>
               <input {...register('riskPerTrade')} type="number" step="0.1" min="0.1" max="20" className={inputCls} />
               <p className="text-xs text-[var(--text-muted)] mt-1">
-                Одоогийн тохиргоо: <span className="text-warn font-mono">{user?.riskPerTrade}%</span>
-                {' '}= <span className="text-warn font-mono">${((user?.balance || 0) * (user?.riskPerTrade || 0) / 100).toFixed(2)}</span>
+                Одоогийн тохиргоо: <span className="number-value text-warn">{user?.riskPerTrade}%</span>
+                {' '}= <span className="number-value text-warn">${((user?.balance || 0) * (user?.riskPerTrade || 0) / 100).toFixed(2)}</span>
               </p>
             </div>
           </div>

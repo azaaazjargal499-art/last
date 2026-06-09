@@ -1,13 +1,13 @@
-//+------------------------------------------------------------------+
-//| Smart Investory MT5 EA Connector                                 |
-//| Sends MT5 trade events to Smart Investory without broker password |
+﻿//+------------------------------------------------------------------+
+//| Trade Journal MT5 EA Connector                                 |
+//| Sends MT5 trade events to Trade Journal without broker password |
 //+------------------------------------------------------------------+
 #property strict
 #property version   "1.00"
-#property description "Smart Investory real-time trade journal connector"
+#property description "Trade Journal real-time trade journal connector"
 
-input string SmartInvestoryApiBase = "http://localhost:3000";
-input string SmartInvestoryToken = "";
+input string TradeJournalApiBase = "http://localhost:3001";
+input string TradeJournalToken = "";
 input int PingSeconds = 30;
 input bool SendOpenPositionsOnStart = true;
 
@@ -34,13 +34,13 @@ string IsoTime(datetime value)
 
 bool PostJson(string path, string payload)
 {
-   if(StringLen(SmartInvestoryToken) < 16)
+   if(StringLen(TradeJournalToken) < 16)
    {
-      Print("Smart Investory token is missing.");
+      Print("Trade Journal token is missing.");
       return false;
    }
 
-   string url = TrimSlash(SmartInvestoryApiBase) + path;
+   string url = TrimSlash(TradeJournalApiBase) + path;
    string headers = "Content-Type: application/json\r\n";
    char data[];
    char result[];
@@ -52,23 +52,23 @@ bool PostJson(string path, string payload)
    int status = WebRequest("POST", url, headers, 10000, data, result, resultHeaders);
    if(status == -1)
    {
-      Print("Smart Investory WebRequest failed. Add this URL in MT5: Tools > Options > Expert Advisors > Allow WebRequest: ", SmartInvestoryApiBase, ". Error: ", GetLastError());
+      Print("Trade Journal WebRequest failed. Add this URL in MT5: Tools > Options > Expert Advisors > Allow WebRequest: ", TradeJournalApiBase, ". Error: ", GetLastError());
       return false;
    }
 
    if(status < 200 || status >= 300)
    {
       string body = CharArrayToString(result, 0, WHOLE_ARRAY, CP_UTF8);
-      Print("Smart Investory API returned HTTP ", status, ": ", body);
+      Print("Trade Journal API returned HTTP ", status, ": ", body);
       return false;
    }
 
    return true;
 }
 
-bool PingSmartInvestory()
+bool PingTradeJournal()
 {
-   string payload = "{\"token\":\"" + JsonEscape(SmartInvestoryToken) + "\"}";
+   string payload = "{\"token\":\"" + JsonEscape(TradeJournalToken) + "\"}";
    return PostJson("/api/ea/ping", payload);
 }
 
@@ -82,7 +82,7 @@ string PositionPayload(ulong ticket, string eventType)
    string symbol = PositionGetString(POSITION_SYMBOL);
 
    return "{"
-      + "\"token\":\"" + JsonEscape(SmartInvestoryToken) + "\","
+      + "\"token\":\"" + JsonEscape(TradeJournalToken) + "\","
       + "\"eventType\":\"" + eventType + "\","
       + "\"ticket\":" + IntegerToString((long)ticket) + ","
       + "\"orderId\":" + IntegerToString((long)ticket) + ","
@@ -120,7 +120,7 @@ string DealPayload(ulong dealTicket)
    double price = HistoryDealGetDouble(dealTicket, DEAL_PRICE);
 
    return "{"
-      + "\"token\":\"" + JsonEscape(SmartInvestoryToken) + "\","
+      + "\"token\":\"" + JsonEscape(TradeJournalToken) + "\","
       + "\"eventType\":\"" + eventType + "\","
       + "\"ticket\":" + IntegerToString((long)dealTicket) + ","
       + "\"orderId\":" + IntegerToString((long)orderId) + ","
@@ -157,7 +157,7 @@ int OnInit()
    else
       EventSetTimer(PingSeconds);
 
-   PingSmartInvestory();
+   PingTradeJournal();
 
    if(SendOpenPositionsOnStart)
       SendAllOpenPositions();
@@ -172,7 +172,7 @@ void OnDeinit(const int reason)
 
 void OnTimer()
 {
-   PingSmartInvestory();
+   PingTradeJournal();
    SendAllOpenPositions();
 }
 

@@ -6,7 +6,7 @@ import { brokerService, tradeService } from '@/services/index';
 import { formatCurrency, formatDateTime, formatPnL } from '@/utils/formatters';
 
 const brokers = ['XM', 'Exness', 'IC Markets', 'FBS', 'Pepperstone', 'ForexMN', 'Other'];
-const inputCls = 'h-12 w-full rounded-xl border border-white/10 bg-slate-950/35 px-4 text-sm font-bold text-white outline-none transition placeholder:text-slate-500 focus:border-emerald-300/50 focus:ring-4 focus:ring-emerald-300/10';
+const inputCls = 'broker-input h-12 w-full rounded-xl border border-white/10 bg-slate-950/35 px-4 text-sm font-bold text-white outline-none transition placeholder:text-slate-500 focus:border-emerald-300/50 focus:ring-4 focus:ring-emerald-300/10';
 
 export default function Broker() {
   const qc = useQueryClient();
@@ -98,15 +98,15 @@ export default function Broker() {
   const closedTrades = trades.filter((trade) => trade.status === 'CLOSED');
 
   return (
-    <div className="animate-slide-up space-y-6">
-      <section className="rounded-3xl border border-white/10 bg-white/[0.055] p-6 shadow-2xl shadow-black/20 backdrop-blur-xl">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+    <div className="animate-slide-up space-y-5">
+      <section className="rounded-[24px] border border-white/10 bg-white/[0.055] p-4 shadow-xl shadow-black/10 backdrop-blur-xl sm:p-5">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div>
             <div className="inline-flex items-center gap-2 rounded-full border border-emerald-300/20 bg-emerald-300/10 px-3 py-1 text-xs font-black text-emerald-200">
               <Cable className="h-4 w-4" />
               MT5 broker sync
             </div>
-            <h1 className="mt-4 font-display text-4xl font-black text-white">Broker холболт</h1>
+            <h1 className="mt-3 font-display text-xl font-black text-white">Broker холболт</h1>
             <p className="mt-2 max-w-3xl text-sm font-semibold leading-6 text-slate-400">
               Account холбогдсон үед энэ хэсэг MT5 terminal-аас balance, equity, open trade, synced trade мэдээллийг автоматаар шинэчилнэ.
             </p>
@@ -158,7 +158,7 @@ function ConnectedView({ connection, trades, openTrades, closedTrades, tradeTab,
         </div>
       )}
 
-      <section className="rounded-3xl border border-white/10 bg-white/[0.055] p-6 shadow-xl shadow-black/10 backdrop-blur-xl">
+      <section className="rounded-3xl border border-white/10 bg-white/[0.055] p-4 shadow-xl shadow-black/10 backdrop-blur-xl sm:p-6">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
             <h2 className="flex items-center gap-2 text-xl font-black text-white">
@@ -174,7 +174,7 @@ function ConnectedView({ connection, trades, openTrades, closedTrades, tradeTab,
               type="button"
               onClick={onSync}
               disabled={syncPending}
-              className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.06] px-5 py-3 text-sm font-black text-white transition hover:bg-white/[0.1] disabled:opacity-50"
+              className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.06] px-4 py-3 text-sm font-black text-white transition hover:bg-white/[0.1] disabled:opacity-50 sm:flex-none sm:px-5"
             >
               <RefreshCw className={`h-4 w-4 ${syncPending ? 'animate-spin' : ''}`} />
               Sync now
@@ -183,7 +183,7 @@ function ConnectedView({ connection, trades, openTrades, closedTrades, tradeTab,
               type="button"
               onClick={onDisconnect}
               disabled={disconnectPending}
-              className="inline-flex items-center gap-2 rounded-xl border border-rose-300/20 bg-rose-300/10 px-5 py-3 text-sm font-black text-rose-200 transition hover:bg-rose-300/15 disabled:opacity-50"
+              className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-rose-300/20 bg-rose-300/10 px-4 py-3 text-sm font-black text-rose-200 transition hover:bg-rose-300/15 disabled:opacity-50 sm:flex-none sm:px-5"
             >
               <Unplug className="h-4 w-4" />
               Disconnect
@@ -204,7 +204,7 @@ function ConnectedView({ connection, trades, openTrades, closedTrades, tradeTab,
 
 function ConnectView({ form, updateForm, connectPending, onConnect }) {
   return (
-    <section className="rounded-3xl border border-white/10 bg-white/[0.055] p-6 shadow-xl shadow-black/10 backdrop-blur-xl">
+    <section className="rounded-3xl border border-white/10 bg-white/[0.055] p-4 shadow-xl shadow-black/10 backdrop-blur-xl sm:p-6">
       <h2 className="flex items-center gap-2 text-xl font-black text-white">
         <ShieldCheck className="h-5 w-5 text-emerald-300" />
         MT5 account connect
@@ -250,7 +250,7 @@ function StatusCard({ connection, isLoading, liveSync }) {
       {connection && (
         <div className="mt-3 grid gap-2 text-xs font-semibold text-slate-400">
           <div>{connection.broker} · {connection.maskedAccountNumber} · {connection.server}</div>
-          <div className="font-mono text-lg font-black text-emerald-200">
+          <div className="number-value text-lg font-black text-emerald-200">
             {formatCurrency(connection.accountBalance || 0)} {connection.accountCurrency || 'USD'}
           </div>
           {connection.accountEquity != null && <div>Equity: {formatCurrency(connection.accountEquity)}</div>}
@@ -273,7 +273,7 @@ function MetricCard({ label, value, sub, tone = 'slate' }) {
   return (
     <div className="rounded-2xl border border-white/10 bg-white/[0.055] p-5 shadow-xl shadow-black/10">
       <div className="text-xs font-black uppercase tracking-wide text-slate-500">{label}</div>
-      <div className={`mt-2 font-mono text-2xl font-black ${color}`}>{value}</div>
+      <div className={`number-value mt-2 text-2xl font-black ${color}`}>{value}</div>
       {sub && <div className="mt-1 text-xs font-bold text-slate-500">{sub}</div>}
     </div>
   );
@@ -343,7 +343,31 @@ function TradeRows({ trades }) {
 
   return (
     <div className="overflow-hidden">
-      <div className="overflow-x-auto">
+      <div className="grid gap-3 p-3 md:hidden">
+        {trades.map((trade) => (
+          <div key={trade.id} className="rounded-2xl border border-white/10 bg-white/[0.035] p-3">
+            <div className="flex items-center justify-between gap-3">
+              <div className="font-mono text-sm font-black text-white">{trade.pair}</div>
+              <span className={`rounded-full px-2.5 py-1 text-xs font-black ${trade.direction === 'BUY' ? 'bg-emerald-300/15 text-emerald-200' : 'bg-rose-300/15 text-rose-200'}`}>
+                {trade.direction}
+              </span>
+            </div>
+            <div className="mt-3 grid grid-cols-2 gap-2 text-xs font-bold text-slate-500">
+              <div>Lot <span className="font-mono text-slate-200">{trade.lotSize}</span></div>
+              <div>Entry <span className="font-mono text-slate-200">{trade.entryPrice}</span></div>
+              <div>Price <span className="font-mono text-slate-200">{trade.exitPrice || trade.currentPrice || '-'}</span></div>
+              <div className={`number-value ${trade.pnl >= 0 ? 'text-emerald-200' : 'text-rose-200'}`}>{trade.pnl != null ? formatPnL(trade.pnl) : '-'}</div>
+            </div>
+            <div className="mt-2 flex items-center justify-between gap-2">
+              <span className={`rounded-full px-2.5 py-1 text-xs font-black ${trade.status === 'OPEN' ? 'bg-emerald-300/15 text-emerald-200' : 'bg-slate-300/10 text-slate-300'}`}>
+                {trade.status}
+              </span>
+              <span className="truncate text-xs font-bold text-slate-500">{trade.syncedAt ? formatDateTime(trade.syncedAt) : '-'}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="hidden md:block">
         <table className="w-full min-w-[760px] text-sm">
           <thead className="sticky top-0 z-10 bg-slate-950 text-left text-xs font-black uppercase tracking-wide text-slate-500">
             <tr>
@@ -369,11 +393,11 @@ function TradeRows({ trades }) {
                 <td className="px-4 py-3 font-mono font-bold text-slate-200">{trade.lotSize}</td>
                 <td className="px-4 py-3 font-mono font-bold text-slate-300">{trade.entryPrice}</td>
                 <td className="px-4 py-3 font-mono font-bold text-slate-300">{trade.exitPrice || trade.currentPrice || '-'}</td>
-                <td className={`px-4 py-3 font-mono font-black ${trade.pnl >= 0 ? 'text-emerald-200' : 'text-rose-200'}`}>
+                <td className={`number-value px-4 py-3 font-black ${trade.pnl >= 0 ? 'text-emerald-200' : 'text-rose-200'}`}>
                   {trade.pnl != null ? formatPnL(trade.pnl) : '-'}
                 </td>
                 <td className="px-4 py-3">
-                  <span className={`rounded-full px-2.5 py-1 text-xs font-black ${trade.status === 'OPEN' ? 'bg-blue-300/15 text-blue-200' : 'bg-slate-300/10 text-slate-300'}`}>
+                  <span className={`rounded-full px-2.5 py-1 text-xs font-black ${trade.status === 'OPEN' ? 'bg-emerald-300/15 text-emerald-200' : 'bg-slate-300/10 text-slate-300'}`}>
                     {trade.status}
                   </span>
                 </td>

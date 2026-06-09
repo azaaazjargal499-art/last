@@ -25,9 +25,9 @@ export default {
         warn:   '#f59e0b',
       },
       fontFamily: {
-        display: ['"Space Grotesk"', 'sans-serif'],
+        display: ['"Plus Jakarta Sans"', 'Inter', 'sans-serif'],
         mono:    ['"JetBrains Mono"', 'monospace'],
-        body:    ['"DM Sans"', 'sans-serif'],
+        body:    ['"Plus Jakarta Sans"', 'Inter', 'sans-serif'],
       },
       animation: {
         'fade-in':     'fadeIn 0.3s ease-out',

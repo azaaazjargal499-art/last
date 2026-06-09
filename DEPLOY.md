@@ -8,7 +8,7 @@
 4. Render `render.yaml` файлыг уншаад 3 resource үүсгэнэ:
    - `smart-inventory-db` PostgreSQL database
    - `smart-inventory-api` Node/Express API
-   - `smart-inventory-web` React/Vite static frontend
+   - `smart-inventory-web` Next.js frontend
 5. Secret асуувал AI/Google login ашиглах values нэмнэ:
    - `GROQ_API_KEY`
    - `GOOGLE_CLIENT_ID`
@@ -29,7 +29,7 @@
 Хэрвээ Render service name давхцаад өөр URL өгвөл:
 
 - Backend-ийн `CORS_ORIGIN`, `FRONTEND_URL`
-- Frontend-ийн `VITE_API_URL`
+- Frontend-ийн `NEXT_PUBLIC_API_URL`
 
 гэсэн env variables-ийг Render dashboard дээр шинэ URL-аар солиод redeploy хийнэ.
 

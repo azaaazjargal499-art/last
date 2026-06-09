@@ -48,7 +48,7 @@ services:
       - smart_network
     command: sh -c "npx prisma migrate deploy && npm run dev"
 
-  # ─── Frontend (React + Vite) ──────────────────────────────────────
+  # ─── Frontend (Next.js) ───────────────────────────────────────────
   frontend:
     build:
       context: ./frontend

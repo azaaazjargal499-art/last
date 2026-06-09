@@ -1,8 +1,8 @@
-import Script from 'next/script';
+﻿import Script from 'next/script';
 import '../index.css';
 
 export const metadata = {
-  title: 'Smart Inventory',
+  title: 'Trade Journal',
   description: 'Forex Trading Journal',
 };
 

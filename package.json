@@ -1,0 +1,17 @@
+{
+  "name": "smart-inventory",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "node scripts/dev.js",
+    "dev:docker": "npm run db:up && node scripts/dev.js",
+    "dev:backend": "npm --prefix backend run dev",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "db:up": "docker compose up -d postgres",
+    "db:down": "docker compose stop postgres",
+    "db:migrate": "npm --prefix backend exec prisma migrate deploy",
+    "install:all": "npm install --prefix backend && npm install --prefix frontend",
+    "clean:next": "node scripts/clean-next.js",
+    "build": "npm run clean:next && npm --prefix frontend run build"
+  }
+}

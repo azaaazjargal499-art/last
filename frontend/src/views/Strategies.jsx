@@ -119,7 +119,7 @@ export default function Strategies() {
                   { label: 'Нийт P&L', value: formatCurrency(Math.abs(s.totalPnL)), color: s.totalPnL >= 0 ? 'text-green-400' : 'text-red-400', prefix: s.totalPnL >= 0 ? '+' : '-' },
                 ].map(item => (
                   <div key={item.label} className="bg-[var(--bg-hover)] rounded-lg p-2 text-center">
-                    <div className={`font-mono font-semibold text-sm ${item.color || 'text-white'}`}>
+                    <div className={`number-value text-sm font-semibold ${item.color || 'text-white'}`}>
                       {item.prefix || ''}{item.value}
                     </div>
                     <div className="text-[10px] text-[var(--text-muted)] mt-0.5">{item.label}</div>
