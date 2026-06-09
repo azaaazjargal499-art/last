@@ -8,7 +8,7 @@
 
 ```
 smart-inventory/
-├── 📁 frontend/                    # React + Vite + Tailwind CSS
+├── 📁 frontend/                    # Next.js + React + Tailwind CSS
 │   ├── src/
 │   │   ├── components/
 │   │   │   └── common/
@@ -34,7 +34,7 @@ smart-inventory/
 │   │   ├── main.jsx                # React entry point
 │   │   └── index.css               # Global styles + CSS variables
 │   ├── Dockerfile
-│   ├── vite.config.js
+│   ├── next.config.js
 │   ├── tailwind.config.js
 │   └── package.json
 │
@@ -71,6 +71,7 @@ smart-inventory/
 │   └── package.json
 │
 ├── docker-compose.yml              # postgres + backend + frontend
+├── package.json                    # root dev scripts
 ├── .env.example
 └── README.md
 ```
@@ -94,7 +95,7 @@ docker compose up --build
 docker exec smart_inventory_api npm run seed
 ```
 
-Дараа нь: **http://localhost:3000** руу орж нэвтрэнэ үү.
+Дараа нь: **http://localhost:3001** руу орж нэвтрэнэ үү.
 
 ```
 📧 demo@smartinventory.mn
@@ -104,6 +105,32 @@ docker exec smart_inventory_api npm run seed
 ---
 
 ## 🖥️ Локал хөгжүүлэлт (Docker-гүй)
+
+### Backend + Frontend хамт асаах
+```bash
+npm run dev                 # backend :5000 + frontend :3001
+```
+
+`npm run dev` нь Docker асаахгүй. Database хэрэгтэй бол `backend/.env` доторх
+`DATABASE_URL`-ийг local PostgreSQL service эсвэл cloud PostgreSQL (Neon,
+Supabase, Render external database URL гэх мэт) руу заана.
+
+Docker-гүй хамгийн бага төвөгтэй хувилбар:
+1. Cloud PostgreSQL дээр database үүсгэнэ.
+2. Түүний connection string-ийг `backend/.env` дотор `DATABASE_URL=` дээр тавина.
+3. Schema-г database руу оруулна:
+```bash
+npm run db:migrate
+```
+4. Дараа нь app-аа асаана:
+```bash
+npm run dev
+```
+
+Docker ашиглаж database асаах хувилбар:
+```bash
+npm run dev:docker          # postgres + backend :5000 + frontend :3001
+```
 
 ### Backend
 ```bash
@@ -119,8 +146,8 @@ npm run dev                 # http://localhost:5000
 ```bash
 cd frontend
 npm install
-cp .env.example .env        # VITE_API_URL=http://localhost:5000/api
-npm run dev                 # http://localhost:3000
+cp .env.example .env        # NEXT_PUBLIC_API_URL=http://localhost:5000/api
+npm run dev                 # http://localhost:3001
 ```
 
 ---
@@ -159,7 +186,7 @@ npm run dev                 # http://localhost:3000
 
 | Давхарга | Технологи |
 |----------|-----------|
-| **Frontend** | React 18, Vite, Tailwind CSS, Recharts, Zustand, React Query, React Router |
+| **Frontend** | Next.js 14, React 18, Tailwind CSS, Recharts, Zustand, React Query, React Router |
 | **Backend** | Node.js, Express.js, Prisma ORM, OpenAI API |
 | **Database** | PostgreSQL 16 |
 | **Auth** | JWT (jsonwebtoken), bcryptjs |
@@ -173,8 +200,8 @@ npm run dev                 # http://localhost:3000
 ```
 ┌─────────────┐     HTTP/REST     ┌─────────────┐     Prisma     ┌──────────────┐
 │   Frontend  │ ──────────────▶  │   Backend   │ ─────────────▶ │  PostgreSQL  │
-│  React/Vite │ ◀──────────────  │  Express.js │ ◀───────────── │   Database   │
-│  :3000      │    JSON API       │  :5000      │                │   :5432      │
+│  Next.js    │ ◀──────────────  │  Express.js │ ◀───────────── │   Database   │
+│  :3001      │    JSON API       │  :5000      │                │   :5432      │
 └─────────────┘                   └─────────────┘                └──────────────┘
        │                                 │
        │           Docker Network        │
@@ -254,3 +281,4 @@ Content-Type: multipart/form-data
 ---
 
 *Smart Inventory — Диплом ын ажил © 2025*
+# last
