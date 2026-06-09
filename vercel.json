@@ -1,0 +1,18 @@
+{
+  "experimentalServices": {
+    "smart-inventory-api": {
+      "type": "web",
+      "root": "backend",
+      "entrypoint": "src/app.js",
+      "routePrefix": "/_/smart-inventory-api",
+      "buildCommand": "npm ci && npx prisma generate"
+    },
+    "smart-inventory-web": {
+      "type": "web",
+      "root": "frontend",
+      "routePrefix": "/",
+      "framework": "nextjs",
+      "buildCommand": "npm ci && npm run build"
+    }
+  }
+}
