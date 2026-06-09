@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ArrowRight,
@@ -14,28 +15,71 @@ import {
 } from 'lucide-react';
 
 const productTabs = [
-  { label: 'Trade journal', icon: CalendarDays },
-  { label: 'MT5 sync', icon: WalletCards },
-  { label: 'Live chart', icon: LineChart },
-  { label: 'AI review', icon: Brain },
-  { label: 'Risk tools', icon: ShieldCheck },
+  {
+    label: 'Trade journal',
+    icon: CalendarDays,
+    eyebrow: 'Automated journal',
+    title: 'Арилжаа бүр дээр юу болсон нь тод харагдана.',
+    text: 'Open, close, lot, entry, exit, P&L, screenshot, note, strategy бүгд нэг мөр дээр хадгалагдана.',
+    bullets: ['Real-time MT5 sync', 'Open болон closed trade', 'Screenshot ба тэмдэглэл', 'AI review action item'],
+    preview: 'journal',
+  },
+  {
+    label: 'MT5 sync',
+    icon: WalletCards,
+    eyebrow: 'Broker connector',
+    title: 'MT5-аа холбоод trade-аа автоматаар тат.',
+    text: 'Broker password шаардахгүй. Connector нь trade event-ийг journal руу явуулж, dashboard дээр шууд шинэчилнэ.',
+    bullets: ['MT5 Expert Advisor connector', 'Token-based secure sync', 'Open/close event tracking', 'Manual бичилт багасна'],
+    preview: 'sync',
+  },
+  {
+    label: 'Live chart',
+    icon: LineChart,
+    eyebrow: 'Chart workspace',
+    title: 'Chart дээрээ setup, entry, exit-ээ шалга.',
+    text: 'Live chart, symbol tracking, screenshot, review note бүгд journal-тэй холбогдоно.',
+    bullets: ['Symbol watch', 'Chart screenshot', 'Setup review', 'Entry/exit context'],
+    preview: 'chart',
+  },
+  {
+    label: 'AI review',
+    icon: Brain,
+    eyebrow: 'AI insight',
+    title: 'Алдаа давтагдаж байгаа эсэхийг AI-р шалга.',
+    text: 'AI нь таны trade note, result, risk behavior дээр үндэслээд сайжруулах action item гаргана.',
+    bullets: ['Best setup detection', 'Repeated mistake review', 'Risk discipline check', 'Next action suggestion'],
+    preview: 'ai',
+  },
+  {
+    label: 'Risk tools',
+    icon: ShieldCheck,
+    eyebrow: 'Risk control',
+    title: 'Risk, drawdown, plan-vs-actual-аа нэг дор хяна.',
+    text: 'Position risk, max daily loss, profit factor, drawdown, risk score-оо dashboard дээр хурдан харна.',
+    bullets: ['Max risk tracking', 'Daily loss guard', 'Profit factor', 'Plan vs actual'],
+    preview: 'risk',
+  },
 ];
 
 const featureCards = [
   {
     title: 'Автомат журнал',
-    text: 'MT5 account холбосны дараа open болон closed trade-ууд нэг дор орж ирнэ. Entry, exit, lot, P&L, symbol, огноо бүгд цэгцтэй хадгалагдана.',
+    text: 'MT5 account холбосны дараа open болон closed trade-ууд нэг дор орж ирнэ.',
     tone: 'from-emerald-500 via-teal-500 to-blue-600',
+    type: 'journal',
   },
   {
     title: 'Нэг workspace',
-    text: 'Calendar, analytics, strategy, screenshot, тэмдэглэл, AI review бүгд нэг dashboard дотор. Арилжаагаа салангид файлгүйгээр хянана.',
+    text: 'Calendar, analytics, strategy, screenshot, тэмдэглэл, AI review бүгд нэг dashboard дотор.',
     tone: 'from-blue-600 via-indigo-600 to-violet-700',
+    type: 'workspace',
   },
   {
     title: 'Автомат статистик',
-    text: 'Win rate, net P&L, profit factor, risk ratio, pair performance, strategy performance-оо гараар бодох шаардлагагүй.',
+    text: 'Win rate, net P&L, profit factor, risk ratio, pair performance-оо гараар бодох шаардлагагүй.',
     tone: 'from-slate-900 via-slate-800 to-emerald-700',
+    type: 'stats',
   },
 ];
 
@@ -53,10 +97,23 @@ function Logo() {
         <img src="/disciplinex-logo.png" alt="Disciplinex logo" className="h-full w-full object-cover" />
       </div>
       <div className="min-w-0">
-        <div className="font-display text-lg font-black leading-5 text-slate-950">Disciplinex</div>
+        <div className="text-lg font-black leading-5 text-slate-950">Disciplinex</div>
         <div className="text-sm font-semibold leading-5 text-slate-500">Smart Inventory Trading Journal</div>
       </div>
     </div>
+  );
+}
+
+function ChameleonButton({ children, onClick, className = '' }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`relative inline-flex items-center justify-center gap-2 overflow-hidden rounded-full border border-white/60 bg-white/35 px-6 py-3 font-black text-slate-950 shadow-xl shadow-emerald-200/60 backdrop-blur-xl transition hover:-translate-y-0.5 hover:shadow-2xl ${className}`}
+    >
+      <span className="absolute inset-0 bg-[linear-gradient(120deg,rgba(16,185,129,0.45),rgba(34,211,238,0.35),rgba(99,102,241,0.32),rgba(236,72,153,0.24))]" />
+      <span className="absolute inset-[1px] rounded-full bg-white/55" />
+      <span className="relative inline-flex items-center gap-2">{children}</span>
+    </button>
   );
 }
 
@@ -128,11 +185,169 @@ function HeroMockup() {
   );
 }
 
+function FeatureVisual({ type }) {
+  if (type === 'journal') {
+    return (
+      <div className="space-y-3">
+        {[
+          ['XAU/USD', '+$420', 'WIN'],
+          ['EUR/USD', '+$180', 'WIN'],
+          ['BTCUSD', '-$90', 'LOSS'],
+        ].map(([symbol, pnl, status]) => (
+          <div key={symbol} className="grid grid-cols-[1fr_0.8fr_0.7fr] rounded-2xl bg-white/20 px-4 py-3 text-sm font-black text-white backdrop-blur">
+            <span>{symbol}</span>
+            <span>{pnl}</span>
+            <span>{status}</span>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (type === 'workspace') {
+    return (
+      <div className="grid grid-cols-2 gap-3">
+        {[
+          [CalendarDays, 'Calendar'],
+          [BarChart3, 'Analytics'],
+          [LineChart, 'Live chart'],
+          [Brain, 'AI review'],
+        ].map(([Icon, label]) => (
+          <div key={label} className="rounded-2xl bg-white/20 p-4 text-white backdrop-blur">
+            <Icon className="mb-3 h-5 w-5" />
+            <div className="text-sm font-black">{label}</div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {[
+        ['Win rate', '62%', 'w-[62%]'],
+        ['Profit factor', '2.4', 'w-[78%]'],
+        ['Risk score', 'Low', 'w-[44%]'],
+      ].map(([label, value, width]) => (
+        <div key={label} className="rounded-2xl bg-white/18 p-4 backdrop-blur">
+          <div className="flex justify-between text-sm font-black text-white">
+            <span>{label}</span>
+            <span>{value}</span>
+          </div>
+          <div className="mt-3 h-2 rounded-full bg-white/25">
+            <div className={`h-2 rounded-full bg-emerald-300 ${width}`} />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function ProductPreview({ type }) {
+  if (type === 'sync') {
+    return (
+      <div className="rounded-[28px] bg-slate-950 p-6 text-white">
+        <div className="flex items-center justify-between">
+          <span className="font-black">MT5 Connector</span>
+          <span className="rounded-full bg-emerald-400 px-3 py-1 text-xs font-black text-slate-950">Connected</span>
+        </div>
+        <div className="mt-6 space-y-3">
+          {['Account verified', 'Token active', 'Trade stream online', 'Last sync: 8 seconds ago'].map((item) => (
+            <div key={item} className="flex items-center gap-3 rounded-2xl bg-white/10 px-4 py-3 text-sm font-bold">
+              <CheckCircle2 className="h-4 w-4 text-emerald-300" />
+              {item}
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (type === 'chart') {
+    return (
+      <div className="rounded-[28px] bg-slate-950 p-6 text-white">
+        <div className="mb-5 flex items-center justify-between">
+          <span className="font-black">XAU/USD live chart</span>
+          <span className="text-sm font-bold text-emerald-300">Setup marked</span>
+        </div>
+        <svg viewBox="0 0 520 220" className="h-64 w-full">
+          <path d="M20 170 C80 130 105 155 150 115 C205 70 235 130 285 95 C340 58 380 70 420 44 C458 20 480 42 505 28" fill="none" stroke="#34d399" strokeWidth="8" strokeLinecap="round" />
+          <path d="M90 48 L90 190 M245 48 L245 190 M400 48 L400 190" stroke="rgba(255,255,255,.12)" strokeWidth="2" />
+          <circle cx="285" cy="95" r="14" fill="#22d3ee" />
+          <rect x="312" y="70" width="132" height="42" rx="18" fill="rgba(255,255,255,.12)" />
+          <text x="330" y="96" fill="white" fontSize="18" fontWeight="800">Entry zone</text>
+        </svg>
+      </div>
+    );
+  }
+
+  if (type === 'ai') {
+    return (
+      <div className="rounded-[28px] bg-slate-950 p-6 text-white">
+        <div className="text-sm font-black uppercase tracking-[0.24em] text-emerald-300">AI conclusion</div>
+        <h4 className="mt-4 text-3xl font-black">Best setup: POI retest</h4>
+        <p className="mt-4 text-base font-semibold leading-7 text-slate-300">
+          Entry сайн байсан ч exit plan эрт өөрчлөгдсөн. Дараагийн 5 trade дээр fixed exit rule мөрд.
+        </p>
+        <div className="mt-6 grid gap-3 sm:grid-cols-2">
+          {['Risk discipline improved', 'Repeated loss reduced', 'Plan match 92%', 'Review exits'].map((item) => (
+            <div key={item} className="rounded-2xl bg-white/10 px-4 py-3 text-sm font-black">{item}</div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (type === 'risk') {
+    return (
+      <div className="rounded-[28px] bg-slate-950 p-6 text-white">
+        <div className="grid gap-4 sm:grid-cols-2">
+          {[
+            ['Max daily risk', '1.2%'],
+            ['Drawdown', '3.8%'],
+            ['Profit factor', '2.4'],
+            ['Plan match', '92%'],
+          ].map(([label, value]) => (
+            <div key={label} className="rounded-3xl bg-white p-5 text-slate-950">
+              <div className="text-sm font-black text-slate-400">{label}</div>
+              <div className="mt-3 text-3xl font-black">{value}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-[28px] bg-[linear-gradient(135deg,#ecfdf5,#ffffff_55%,#eff6ff)] p-5">
+      <div className="overflow-hidden rounded-3xl border border-emerald-200 bg-white shadow-xl">
+        <div className="grid grid-cols-5 gap-px bg-slate-100 text-sm font-black text-slate-500">
+          {['Date', 'Symbol', 'Net P&L', 'Status', 'Strategy'].map((head) => (
+            <div key={head} className="bg-white px-4 py-3">{head}</div>
+          ))}
+        </div>
+        {[
+          ['06/10/2026', 'XAU/USD', '+$600', 'WIN', 'POI Retest'],
+          ['06/14/2026', 'BTCUSD', '-$225', 'LOSS', 'Breakout'],
+          ['06/16/2026', 'EUR/USD', '+$400', 'WIN', 'Liquidity'],
+          ['06/18/2026', 'GBP/USD', '+$150', 'WIN', 'SMC'],
+        ].map((row) => (
+          <div key={row.join('-')} className="grid grid-cols-5 gap-px bg-slate-100 text-sm font-bold">
+            {row.map((cell, index) => (
+              <div key={cell} className={`bg-white px-4 py-4 ${index === 2 ? (cell.startsWith('+') ? 'text-emerald-500' : 'text-rose-500') : 'text-slate-700'}`}>{cell}</div>
+            ))}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function SectionTitle({ eyebrow, title, text }) {
   return (
     <div className="mx-auto mb-12 max-w-4xl text-center">
       <div className="mb-4 text-sm font-black uppercase tracking-[0.24em] text-emerald-500">{eyebrow}</div>
-      <h2 className="font-display text-4xl font-black leading-tight text-slate-950 md:text-6xl">{title}</h2>
+      <h2 className="text-4xl font-black leading-tight text-slate-950 md:text-6xl">{title}</h2>
       <p className="mx-auto mt-5 max-w-2xl text-lg font-medium leading-8 text-slate-500">{text}</p>
     </div>
   );
@@ -140,24 +355,33 @@ function SectionTitle({ eyebrow, title, text }) {
 
 export default function Landing() {
   const navigate = useNavigate();
+  const [activeProduct, setActiveProduct] = useState(0);
+  const currentProduct = productTabs[activeProduct];
 
   return (
     <div className="min-h-screen bg-white text-slate-950">
-      <header className="sticky top-0 z-40 border-b border-slate-100 bg-white/90 backdrop-blur-xl">
-        <nav className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4 md:px-8">
+      <header className="sticky top-0 z-40 border-b border-slate-100 bg-white/85 backdrop-blur-xl">
+        <nav className="mx-auto grid max-w-7xl grid-cols-[1fr_auto_1fr] items-center gap-4 px-5 py-4 md:px-8">
           <Logo />
-          <div className="hidden items-center gap-7 text-sm font-bold text-slate-500 md:flex">
-            <a href="#journal" className="hover:text-slate-950">Journal</a>
-            <a href="#products" className="hover:text-slate-950">Tools</a>
-            <a href="#strategy" className="hover:text-slate-950">Strategy</a>
+          <div className="hidden rounded-full border border-white/70 bg-white/35 p-1 shadow-lg shadow-emerald-100/70 backdrop-blur-xl md:flex">
+            {[
+              ['Journal', '#journal'],
+              ['Tools', '#products'],
+              ['Strategy', '#strategy'],
+            ].map(([label, href]) => (
+              <a
+                key={label}
+                href={href}
+                className="rounded-full px-5 py-2.5 text-sm font-black text-slate-800 transition hover:bg-[linear-gradient(120deg,rgba(16,185,129,.22),rgba(34,211,238,.18),rgba(99,102,241,.18))] hover:text-emerald-700"
+              >
+                {label}
+              </a>
+            ))}
           </div>
-          <div className="flex items-center gap-3">
-            <button onClick={() => navigate('/auth')} className="hidden rounded-full px-5 py-3 text-sm font-black text-slate-700 hover:bg-slate-100 sm:block">
-              Нэвтрэх
-            </button>
-            <button onClick={() => navigate('/auth')} className="inline-flex items-center gap-2 rounded-full bg-blue-600 px-5 py-3 text-sm font-black text-white shadow-xl shadow-blue-200 transition hover:-translate-y-0.5 hover:bg-slate-950">
+          <div className="flex justify-end">
+            <ChameleonButton onClick={() => navigate('/auth')}>
               Эхлэх <ArrowRight className="h-4 w-4" />
-            </button>
+            </ChameleonButton>
           </div>
         </nav>
       </header>
@@ -170,16 +394,16 @@ export default function Landing() {
                 <Sparkles className="h-4 w-4" />
                 AI + MT5 trading journal workspace
               </div>
-              <h1 className="font-display text-5xl font-black leading-[0.98] tracking-normal text-slate-950 md:text-7xl">
+              <h1 className="text-5xl font-black leading-[0.98] tracking-normal text-slate-950 md:text-7xl">
                 Арилжаагаа нэг дор цэгцтэй хяна.
               </h1>
               <p className="mt-7 max-w-2xl text-xl font-medium leading-9 text-slate-600">
                 Smart Inventory бол trader-д зориулсан journal систем. MT5 sync, trade calendar, live chart, screenshot, strategy tracking, risk management, AI review бүгд нэг workspace дотор ажиллана.
               </p>
               <div className="mt-9 flex flex-col gap-4 sm:flex-row">
-                <button onClick={() => navigate('/auth')} className="inline-flex h-14 items-center justify-center gap-2 rounded-full bg-blue-600 px-7 text-base font-black text-white shadow-2xl shadow-blue-200 transition hover:-translate-y-0.5 hover:bg-slate-950">
+                <ChameleonButton onClick={() => navigate('/auth')} className="h-14 px-7 text-base">
                   Workspace руу орох <ArrowRight className="h-5 w-5" />
-                </button>
+                </ChameleonButton>
                 <a href="#products" className="inline-flex h-14 items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-7 text-base font-black text-slate-800 shadow-sm transition hover:-translate-y-0.5 hover:border-emerald-200 hover:text-emerald-700">
                   Боломжууд харах <PlayCircle className="h-5 w-5" />
                 </a>
@@ -205,18 +429,11 @@ export default function Landing() {
           />
           <div className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-3">
             {featureCards.map((feature) => (
-              <div key={feature.title} className={`min-h-[340px] overflow-hidden rounded-[28px] bg-gradient-to-br ${feature.tone} p-8 text-white shadow-2xl shadow-slate-200`}>
-                <h3 className="text-3xl font-black leading-tight">{feature.title}</h3>
-                <p className="mt-5 text-lg font-semibold leading-8 text-white/90">{feature.text}</p>
-                <div className="mt-10 rounded-3xl bg-white/18 p-5 backdrop-blur">
-                  <div className="grid grid-cols-3 gap-3">
-                    {[1, 2, 3].map((item) => (
-                      <div key={item} className="h-20 rounded-2xl bg-white/85" />
-                    ))}
-                  </div>
-                  <div className="mt-4 h-3 rounded-full bg-white/35">
-                    <div className="h-3 w-2/3 rounded-full bg-white" />
-                  </div>
+              <div key={feature.title} className={`min-h-[380px] overflow-hidden rounded-[28px] bg-gradient-to-br ${feature.tone} p-8 text-white shadow-2xl shadow-slate-200`}>
+                <h3 className="text-3xl font-black leading-tight text-white">{feature.title}</h3>
+                <p className="mt-5 min-h-[96px] text-lg font-semibold leading-8 text-white/90">{feature.text}</p>
+                <div className="mt-8 rounded-3xl bg-white/12 p-5 backdrop-blur">
+                  <FeatureVisual type={feature.type} />
                 </div>
               </div>
             ))}
@@ -227,26 +444,36 @@ export default function Landing() {
           <SectionTitle
             eyebrow="All your tools"
             title="Нэг dashboard. Бүх хэрэгсэл."
-            text="Better trader болохын тулд хэрэгтэй journal, broker sync, chart, AI insight, risk tool, strategy tracker бүгд нэг дор."
+            text="Tab бүр дээр дарж үз. Journal, MT5 sync, chart, AI insight, risk tool бүр өөр өөр workflow харуулна."
           />
-          <div className="mx-auto mb-10 flex max-w-5xl flex-wrap justify-center gap-3">
-            {productTabs.map(({ label, icon: Icon }, index) => (
-              <div key={label} className={`inline-flex items-center gap-2 rounded-full border px-5 py-3 text-sm font-black ${index === 0 ? 'border-emerald-300 bg-white text-emerald-700 shadow-lg shadow-emerald-100' : 'border-slate-200 bg-white text-slate-600'}`}>
-                <Icon className="h-4 w-4" />
-                {label}
-              </div>
-            ))}
+          <div className="mx-auto mb-10 flex max-w-6xl flex-wrap justify-center gap-3">
+            {productTabs.map(({ label, icon: Icon }, index) => {
+              const isActive = activeProduct === index;
+              return (
+                <button
+                  key={label}
+                  type="button"
+                  onClick={() => setActiveProduct(index)}
+                  className={`inline-flex items-center gap-2 rounded-full border px-5 py-3 text-sm font-black transition hover:-translate-y-0.5 ${
+                    isActive
+                      ? 'border-white/70 bg-[linear-gradient(120deg,rgba(16,185,129,.22),rgba(34,211,238,.18),rgba(99,102,241,.18),rgba(236,72,153,.14))] text-emerald-700 shadow-xl shadow-emerald-100 backdrop-blur'
+                      : 'border-slate-200 bg-white text-slate-600 hover:border-emerald-200 hover:text-emerald-700'
+                  }`}
+                >
+                  <Icon className="h-4 w-4" />
+                  {label}
+                </button>
+              );
+            })}
           </div>
 
           <div className="mx-auto grid max-w-7xl items-center gap-8 rounded-[32px] border border-slate-200 bg-white p-8 shadow-2xl shadow-slate-200/70 lg:grid-cols-[0.85fr_1.15fr] lg:p-12">
             <div>
-              <div className="mb-5 text-sm font-black uppercase tracking-[0.22em] text-emerald-500">Journal table</div>
-              <h3 className="text-4xl font-black leading-tight text-slate-950">Арилжаа бүр дээр юу болсон нь тод харагдана.</h3>
-              <p className="mt-6 text-lg font-medium leading-8 text-slate-500">
-                Strategy, setup, risk, result, screenshot, note, AI conclusion нэг мөр дээр холбогдоно. Ингэснээр та давтагддаг алдаагаа хурдан олно.
-              </p>
+              <div className="mb-5 text-sm font-black uppercase tracking-[0.22em] text-emerald-500">{currentProduct.eyebrow}</div>
+              <h3 className="text-4xl font-black leading-tight text-slate-950">{currentProduct.title}</h3>
+              <p className="mt-6 text-lg font-medium leading-8 text-slate-500">{currentProduct.text}</p>
               <div className="mt-8 space-y-4">
-                {['Real-time MT5 sync', 'Open болон closed trade', 'Screenshot ба тэмдэглэл', 'AI review ба action item'].map((item) => (
+                {currentProduct.bullets.map((item) => (
                   <div key={item} className="flex items-center gap-3 text-base font-bold text-slate-700">
                     <CheckCircle2 className="h-5 w-5 text-emerald-600" />
                     {item}
@@ -254,27 +481,7 @@ export default function Landing() {
                 ))}
               </div>
             </div>
-            <div className="rounded-[28px] bg-[linear-gradient(135deg,#ecfdf5,#ffffff_55%,#eff6ff)] p-5">
-              <div className="overflow-hidden rounded-3xl border border-emerald-200 bg-white shadow-xl">
-                <div className="grid grid-cols-5 gap-px bg-slate-100 text-sm font-black text-slate-500">
-                  {['Date', 'Symbol', 'Net P&L', 'Status', 'Strategy'].map((head) => (
-                    <div key={head} className="bg-white px-4 py-3">{head}</div>
-                  ))}
-                </div>
-                {[
-                  ['06/10/2026', 'XAU/USD', '+$600', 'WIN', 'POI Retest'],
-                  ['06/14/2026', 'BTCUSD', '-$225', 'LOSS', 'Breakout'],
-                  ['06/16/2026', 'EUR/USD', '+$400', 'WIN', 'Liquidity'],
-                  ['06/18/2026', 'GBP/USD', '+$150', 'WIN', 'SMC'],
-                ].map((row) => (
-                  <div key={row.join('-')} className="grid grid-cols-5 gap-px bg-slate-100 text-sm font-bold">
-                    {row.map((cell, index) => (
-                      <div key={cell} className={`bg-white px-4 py-4 ${index === 2 ? (cell.startsWith('+') ? 'text-emerald-500' : 'text-rose-500') : 'text-slate-700'}`}>{cell}</div>
-                    ))}
-                  </div>
-                ))}
-              </div>
-            </div>
+            <ProductPreview type={currentProduct.preview} />
           </div>
         </section>
 
@@ -335,13 +542,13 @@ export default function Landing() {
         </section>
 
         <section className="bg-slate-950 px-5 py-20 text-center text-white md:px-8">
-          <h2 className="font-display text-4xl font-black md:text-6xl">Одоо арилжаагаа датагаар удирд.</h2>
+          <h2 className="text-4xl font-black md:text-6xl">Одоо арилжаагаа датагаар удирд.</h2>
           <p className="mx-auto mt-5 max-w-2xl text-lg font-medium leading-8 text-slate-300">
             Бүртгэл үүсгээд dashboard, live chart, MT5 sync, AI review-ээ нэг дор ашигла.
           </p>
-          <button onClick={() => navigate('/auth')} className="mt-9 inline-flex h-14 items-center justify-center gap-2 rounded-full bg-white px-8 text-base font-black text-slate-950 transition hover:-translate-y-0.5 hover:bg-emerald-100">
-            Нэвтрэх <ArrowRight className="h-5 w-5" />
-          </button>
+          <ChameleonButton onClick={() => navigate('/auth')} className="mt-9 h-14 px-8 text-base">
+            Эхлэх <ArrowRight className="h-5 w-5" />
+          </ChameleonButton>
         </section>
       </main>
     </div>
