@@ -1,6 +1,8 @@
 // smart-inventory/frontend/src/App.jsx
+import { useEffect, useState } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from '@/store/authStore';
+import { authService } from '@/services/index';
 
 // Pages
 import Landing   from '@/views/Landing';
@@ -39,7 +41,44 @@ const AdminRoute = ({ children }) => {
 };
 
 export default function App() {
-  const { token } = useAuthStore();
+  const { token, updateUser, logout } = useAuthStore();
+  const [isCheckingSession, setIsCheckingSession] = useState(true);
+
+  useEffect(() => {
+    let isActive = true;
+
+    if (!token) {
+      setIsCheckingSession(false);
+      return () => {
+        isActive = false;
+      };
+    }
+
+    setIsCheckingSession(true);
+    authService
+      .getMe()
+      .then((user) => {
+        if (isActive) updateUser(user);
+      })
+      .catch(() => {
+        if (isActive) logout();
+      })
+      .finally(() => {
+        if (isActive) setIsCheckingSession(false);
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, [token, updateUser, logout]);
+
+  if (isCheckingSession) {
+    return (
+      <div className="grid min-h-screen place-items-center bg-slate-950 text-sm font-black text-white">
+        Trade Journal ачаалж байна...
+      </div>
+    );
+  }
 
   return (
     <Routes>
