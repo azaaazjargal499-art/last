@@ -1,0 +1,8 @@
+.env
+.env.*
+backend/.env
+backend/.env.*
+frontend/.env
+frontend/.env.*
+backend/*.log
+backend/*.out.log
