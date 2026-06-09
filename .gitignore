@@ -39,4 +39,5 @@ Thumbs.db
 # Local nested Git backups
 .git-backup*/
 
-.vercel
+.vercel/
+.env.local

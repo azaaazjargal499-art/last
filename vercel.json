@@ -5,7 +5,7 @@
       "root": "backend",
       "entrypoint": "src/app.js",
       "routePrefix": "/_/smart-inventory-api",
-      "buildCommand": "npm ci && npx prisma generate"
+      "buildCommand": "npm ci && npx prisma migrate deploy && npx prisma generate"
     },
     "smart-inventory-web": {
       "type": "web",
