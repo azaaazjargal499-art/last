@@ -9,6 +9,11 @@ const saveImageData = async (imageData, imageFilename, req) => {
   if (!imageData) return null;
   const match = imageData.match(/^data:(image\/[^;]+);base64,(.+)$/);
   if (!match) return null;
+
+  if (process.env.VERCEL || process.env.STORE_IMAGES_IN_DATABASE === 'true') {
+    return imageData;
+  }
+
   const [, mimeType, encoded] = match;
   const ext = path.extname(imageFilename || '') || mimeType.split('/').pop();
   const safeExt = ext.replace(/[^a-z0-9]+/gi, '').toLowerCase() || 'png';
