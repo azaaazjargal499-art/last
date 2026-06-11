@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import {
   ArrowRight,
-  BadgeDollarSign,
   BarChart3,
   CalendarDays,
   Eye,
@@ -149,6 +148,7 @@ export default function Auth() {
   const [mode, setMode] = useState('login');
   const [showPass, setShowPass] = useState(false);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [isSendingCode, setIsSendingCode] = useState(false);
   const { login } = useAuthStore();
   const navigate = useNavigate();
 
@@ -190,7 +190,6 @@ export default function Auth() {
       const res = await authService.login(data);
       login(res.user, res.token);
       toast.success(`Тавтай морил, ${res.user.username}!`);
-      await new Promise((resolve) => setTimeout(resolve, 600));
       navigate('/dashboard');
     } catch (_) {
       setIsLoggingIn(false);
@@ -204,9 +203,47 @@ export default function Auth() {
       const res = await authService.register(data);
       login(res.user, res.token);
       toast.success('Бүртгэл амжилттай!');
-      await new Promise((resolve) => setTimeout(resolve, 600));
       navigate('/dashboard');
     } catch (_) {
+      setIsLoggingIn(false);
+    }
+  };
+
+  const resetForm = useForm();
+  const requestResetCode = async () => {
+    const valid = await resetForm.trigger(['email', 'username']);
+    if (!valid) return;
+
+    const { email, username } = resetForm.getValues();
+    try {
+      setIsSendingCode(true);
+      await authService.requestResetCode({ email, username });
+      toast.success('Код email рүү илгээгдлээ.');
+    } catch (_) {
+    } finally {
+      setIsSendingCode(false);
+    }
+  };
+
+  const resetSubmit = async (data) => {
+    if (data.password !== data.confirmPassword) {
+      resetForm.setError('confirmPassword', { message: 'Нууц үг таарахгүй байна' });
+      return;
+    }
+
+    try {
+      setIsLoggingIn(true);
+      await authService.resetPassword({
+        email: data.email,
+        username: data.username,
+        code: data.code,
+        password: data.password,
+      });
+      toast.success('Нууц үг шинэчлэгдлээ. Одоо нэвтэрнэ үү.');
+      resetForm.reset();
+      setMode('login');
+    } catch (_) {
+    } finally {
       setIsLoggingIn(false);
     }
   };
@@ -215,9 +252,12 @@ export default function Auth() {
     setMode(mode === 'login' ? 'register' : 'login');
     loginForm.reset();
     registerForm.reset();
+    resetForm.reset();
   };
 
   const isLogin = mode === 'login';
+  const isRegister = mode === 'register';
+  const isReset = mode === 'reset';
 
   return (
     <div className="min-h-screen bg-[linear-gradient(120deg,#ffffff_0%,#f4f8ff_55%,#ecfdf5_100%)] p-4 text-slate-950 md:p-6">
@@ -237,11 +277,13 @@ export default function Auth() {
                 Secure access
               </div>
               <h2 className="font-display text-4xl font-black leading-tight text-slate-950 md:text-5xl">
-                {isLogin ? 'Нэвтрэх' : 'Бүртгүүлэх'}
+                {isLogin ? 'Нэвтрэх' : isReset ? 'Нууц үг сэргээх' : 'Бүртгүүлэх'}
               </h2>
               <p className="mt-3 text-base font-medium leading-7 text-slate-500">
                 {isLogin
                   ? 'Өөрийн Trade Journal workspace руугаа нэвтэрч journal, analytics, AI review-ээ үргэлжлүүл.'
+                  : isReset
+                    ? 'Email болон хэрэглэгчийн нэрээ баталгаажуулаад шинэ нууц үг тохируулна.'
                   : 'Шинэ trading journal үүсгээд арилжаагаа эхний өдрөөсөө датагаар хяна.'}
               </p>
             </div>
@@ -288,8 +330,21 @@ export default function Auth() {
                     {isLoggingIn || loginForm.formState.isSubmitting ? 'Нэвтэрч байна...' : 'Нэвтрэх'}
                     <ArrowRight className="h-5 w-5 transition group-hover:translate-x-0.5" />
                   </button>
+                  <div className="text-right">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMode('reset');
+                        loginForm.reset();
+                        resetForm.reset();
+                      }}
+                      className="text-sm font-black text-blue-600 transition hover:text-slate-950"
+                    >
+                      Нууц үгээ мартсан уу?
+                    </button>
+                  </div>
                 </form>
-              ) : (
+              ) : isRegister ? (
                 <form onSubmit={registerForm.handleSubmit(registerSubmit)} className="space-y-5">
                   <Field label="Хэрэглэгчийн нэр" error={registerForm.formState.errors.username?.message}>
                     <UserRound className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
@@ -326,17 +381,6 @@ export default function Auth() {
                     />
                   </Field>
 
-                  <Field label="Эхлэх баланс (USD)" error={registerForm.formState.errors.balance?.message}>
-                    <BadgeDollarSign className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
-                    <input
-                      {...registerForm.register('balance', { valueAsNumber: true })}
-                      type="number"
-                      defaultValue={10000}
-                      className={inputClass}
-                      disabled={isLoggingIn}
-                    />
-                  </Field>
-
                   <button
                     type="submit"
                     disabled={registerForm.formState.isSubmitting || isLoggingIn}
@@ -346,11 +390,95 @@ export default function Auth() {
                     <ArrowRight className="h-5 w-5 transition group-hover:translate-x-0.5" />
                   </button>
                 </form>
+              ) : (
+                <form onSubmit={resetForm.handleSubmit(resetSubmit)} className="space-y-5">
+                  <Field label="Email хаяг" error={resetForm.formState.errors.email?.message}>
+                    <Mail className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+                    <input
+                      {...resetForm.register('email', { required: 'Email оруулна уу' })}
+                      type="email"
+                      placeholder="email@example.com"
+                      className={inputClass}
+                      disabled={isLoggingIn}
+                    />
+                  </Field>
+
+                  <Field label="Хэрэглэгчийн нэр" error={resetForm.formState.errors.username?.message}>
+                    <UserRound className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+                    <input
+                      {...resetForm.register('username', { required: 'Хэрэглэгчийн нэр оруулна уу' })}
+                      placeholder="trader123"
+                      className={inputClass}
+                      disabled={isLoggingIn}
+                    />
+                  </Field>
+
+                  <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
+                    <Field label="Email code" error={resetForm.formState.errors.code?.message}>
+                      <Mail className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+                      <input
+                        {...resetForm.register('code', {
+                          required: 'Email-р ирсэн код оруулна уу',
+                          minLength: { value: 6, message: '6 оронтой код' },
+                        })}
+                        inputMode="numeric"
+                        placeholder="123456"
+                        className={inputClass}
+                        disabled={isLoggingIn}
+                      />
+                    </Field>
+                    <button
+                      type="button"
+                      onClick={requestResetCode}
+                      disabled={isSendingCode || isLoggingIn}
+                      className="mt-7 h-14 rounded-2xl border border-blue-200 bg-blue-50 px-5 text-sm font-black text-blue-700 shadow-sm transition hover:border-blue-300 hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {isSendingCode ? 'Илгээж байна...' : 'Код илгээх'}
+                    </button>
+                  </div>
+
+                  <Field label="Шинэ нууц үг" error={resetForm.formState.errors.password?.message}>
+                    <LockKeyhole className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+                    <input
+                      {...resetForm.register('password', {
+                        required: 'Шинэ нууц үг оруулна уу',
+                        minLength: { value: 6, message: 'Дор хаяж 6 тэмдэгт' },
+                      })}
+                      type="password"
+                      placeholder="••••••••"
+                      className={inputClass}
+                      disabled={isLoggingIn}
+                    />
+                  </Field>
+
+                  <Field label="Шинэ нууц үг давтах" error={resetForm.formState.errors.confirmPassword?.message}>
+                    <LockKeyhole className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+                    <input
+                      {...resetForm.register('confirmPassword', { required: 'Нууц үгээ давтана уу' })}
+                      type="password"
+                      placeholder="••••••••"
+                      className={inputClass}
+                      disabled={isLoggingIn}
+                    />
+                  </Field>
+
+                  <button
+                    type="submit"
+                    disabled={resetForm.formState.isSubmitting || isLoggingIn}
+                    className="group flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 px-5 text-base font-black text-white shadow-2xl shadow-blue-200 transition hover:-translate-y-0.5 hover:bg-slate-950 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {isLoggingIn || resetForm.formState.isSubmitting ? 'Шинэчилж байна...' : 'Нууц үг шинэчлэх'}
+                    <ArrowRight className="h-5 w-5 transition group-hover:translate-x-0.5" />
+                  </button>
+                </form>
               )}
 
               <p className="mt-6 text-center text-sm font-semibold leading-6 text-slate-500">
-                {isLogin ? 'Бүртгэл байхгүй юу?' : 'Аль хэдийн бүртгэлтэй юу?'}{' '}
-                <button onClick={toggleMode} className="font-black text-blue-600 transition hover:text-slate-950">
+                {isLogin ? 'Бүртгэл байхгүй юу?' : isReset ? 'Нууц үгээ санасан уу?' : 'Аль хэдийн бүртгэлтэй юу?'}{' '}
+                <button
+                  onClick={isReset ? () => setMode('login') : toggleMode}
+                  className="font-black text-blue-600 transition hover:text-slate-950"
+                >
                   {isLogin ? 'Бүртгүүлэх' : 'Нэвтрэх'}
                 </button>
               </p>

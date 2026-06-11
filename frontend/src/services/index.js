@@ -45,6 +45,8 @@ export const riskService = {
 export const authService = {
   login:    (data) => api.post('/auth/login', data).then(r => r.data),
   register: (data) => api.post('/auth/register', data).then(r => r.data),
+  requestResetCode: (data) => api.post('/auth/request-reset-code', data).then(r => r.data),
+  resetPassword: (data) => api.post('/auth/reset-password', data).then(r => r.data),
   getMe:    ()     => api.get('/auth/me').then(r => r.data),
   update:   (data) => api.put('/auth/profile', data).then(r => r.data),
 };

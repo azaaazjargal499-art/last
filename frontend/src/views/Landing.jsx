@@ -78,7 +78,7 @@ const featureCards = [
   {
     title: 'Автомат статистик',
     text: 'Win rate, net P&L, profit factor, risk ratio, pair performance-оо гараар бодох шаардлагагүй.',
-    tone: 'from-slate-900 via-slate-800 to-emerald-700',
+    tone: 'from-rose-500 via-blue-600 to-emerald-600',
     type: 'stats',
   },
 ];
@@ -108,7 +108,7 @@ function ChameleonButton({ children, onClick, className = '' }) {
   return (
     <button
       onClick={onClick}
-      className={`relative inline-flex items-center justify-center gap-2 overflow-hidden rounded-full border border-white/60 bg-white/35 px-6 py-3 font-black text-slate-950 shadow-xl shadow-emerald-200/60 backdrop-blur-xl transition hover:-translate-y-0.5 hover:shadow-2xl ${className}`}
+      className={`relative inline-flex items-center justify-center gap-2 overflow-hidden rounded-full border border-emerald-400/80 bg-white/35 px-6 py-3 font-black text-slate-950 shadow-xl shadow-emerald-200/60 ring-1 ring-emerald-300/70 backdrop-blur-xl transition hover:-translate-y-0.5 hover:border-emerald-500 hover:shadow-2xl ${className}`}
     >
       <span className="absolute inset-0 bg-[linear-gradient(120deg,rgba(16,185,129,0.45),rgba(34,211,238,0.35),rgba(99,102,241,0.32),rgba(236,72,153,0.24))]" />
       <span className="absolute inset-[1px] rounded-full bg-white/55" />
@@ -120,8 +120,8 @@ function ChameleonButton({ children, onClick, className = '' }) {
 function HeroMockup() {
   return (
     <div className="relative mx-auto w-full max-w-[760px]">
-      <div className="overflow-hidden rounded-[34px] border border-slate-200 bg-white p-5 shadow-[0_36px_100px_rgba(15,23,42,0.12)]">
-        <div className="rounded-[28px] bg-slate-950 p-5 text-white">
+      <div className="landing-hero-mockup overflow-hidden rounded-[34px] border border-slate-300 bg-[#eef3fb] p-4 shadow-[0_36px_100px_rgba(15,23,42,0.16)] ring-1 ring-slate-300/80">
+        <div className="rounded-[28px] bg-[#e5ecf7] p-4 text-slate-950 md:p-5">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <p className="text-xs font-black uppercase tracking-[0.34em] text-emerald-300">Trade Journal</p>
@@ -130,13 +130,13 @@ function HeroMockup() {
             <div className="rounded-full bg-emerald-400 px-4 py-2 text-sm font-black text-slate-950">+ $800.00</div>
           </div>
 
-          <div className="mt-6 grid gap-4 lg:grid-cols-[1fr_0.85fr]">
-            <div className="rounded-[26px] bg-white p-5 text-slate-950">
-              <div className="mb-4 flex items-center justify-between text-sm font-bold text-slate-500">
+          <div className="mt-5 grid gap-4 lg:grid-cols-[1fr_0.85fr]">
+            <div className="rounded-[26px] border border-slate-200 bg-white p-4 text-slate-950 shadow-sm">
+              <div className="mb-3 flex items-center justify-between text-sm font-bold text-slate-500">
                 <span>Trade journal</span>
                 <span className="rounded-full bg-emerald-50 px-3 py-1 text-emerald-700">MT5 synced</span>
               </div>
-              <div className="grid gap-3">
+              <div className="grid gap-2.5">
                 {[
                   ['XAU/USD', 'BUY', '+$420', 'POI retest'],
                   ['BTCUSD', 'SELL', '-$120', 'Breakout'],
@@ -152,28 +152,28 @@ function HeroMockup() {
               </div>
             </div>
 
-            <div className="rounded-[26px] border border-white/10 bg-white/10 p-5">
+            <div className="rounded-[26px] border border-blue-200/80 bg-blue-50/40 p-4">
               <div className="flex items-center justify-between text-sm uppercase tracking-[0.22em] text-slate-300">
                 <span>AI review</span>
                 <span className="rounded-full bg-white px-3 py-1 text-xs font-black text-slate-950">Auto</span>
               </div>
-              <div className="mt-6 rounded-[22px] bg-white p-5 text-slate-950">
+              <div className="mt-4 rounded-[22px] bg-white p-4 text-slate-950 shadow-sm">
                 <div className="text-sm font-black uppercase tracking-[0.18em] text-blue-600">Best setup</div>
                 <p className="mt-3 text-xl font-black leading-tight">Liquidity sweep + POI retest</p>
-                <p className="mt-4 text-sm font-semibold leading-6 text-slate-500">
+                <p className="mt-3 text-sm font-semibold leading-6 text-slate-500">
                   Risk discipline сайжирсан. Давтагдсан алдаагаа бууруулахын тулд exit rule-ээ дахин шалга.
                 </p>
               </div>
-              <div className="mt-5 grid grid-cols-2 gap-3">
+              <div className="mt-4 grid grid-cols-2 gap-3">
                 {[
                   ['Win rate', '62%'],
                   ['Risk', '0.8%'],
                   ['Trades', '24'],
                   ['Plan', '92%'],
                 ].map(([label, value]) => (
-                  <div key={label} className="rounded-2xl bg-white/10 p-4">
-                    <div className="text-xs font-bold text-slate-400">{label}</div>
-                    <div className="mt-1 text-xl font-black text-white">{value}</div>
+                  <div key={label} className="rounded-2xl border border-slate-200 bg-white/70 p-3 shadow-sm">
+                    <div className="text-xs font-bold text-slate-500">{label}</div>
+                    <div className="mt-1 text-xl font-black text-slate-950">{value}</div>
                   </div>
                 ))}
               </div>
@@ -429,7 +429,7 @@ export default function Landing() {
           />
           <div className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-3">
             {featureCards.map((feature) => (
-              <div key={feature.title} className={`min-h-[380px] overflow-hidden rounded-[28px] bg-gradient-to-br ${feature.tone} p-8 text-white shadow-2xl shadow-slate-200`}>
+              <div key={feature.title} className={`landing-feature-card min-h-[380px] overflow-hidden rounded-[28px] bg-gradient-to-br ${feature.tone} p-8 text-white shadow-2xl shadow-slate-200`}>
                 <h3 className="text-3xl font-black leading-tight text-white">{feature.title}</h3>
                 <p className="mt-5 min-h-[96px] text-lg font-semibold leading-8 text-white/90">{feature.text}</p>
                 <div className="mt-8 rounded-3xl bg-white/12 p-5 backdrop-blur">

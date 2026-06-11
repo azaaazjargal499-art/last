@@ -1,8 +1,10 @@
 // smart-inventory/backend/src/controllers/authController.js
 const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 const prisma = require('../config/database');
 const { withEffectiveRole } = require('../middleware/auth');
+const { sendPasswordResetCode } = require('../utils/mailer');
 
 // ─── Token үүсгэх ─────────────────────────────────────────────────
 const generateToken = (id) => {
@@ -20,6 +22,18 @@ const AVAILABLE_PAIRS = new Set([
   'AUD/USD', 'USD/CAD', 'NZD/USD', 'EUR/GBP',
   'EUR/JPY', 'GBP/JPY', 'XAU/USD', 'XAG/USD',
 ]);
+const passwordResetCodes = new Map();
+const PASSWORD_RESET_CODE_TTL_MS = 10 * 60 * 1000;
+
+const createPasswordResetCode = () => String(crypto.randomInt(100000, 1000000));
+
+const getPasswordResetKey = (email, username) => (
+  `${String(email).trim().toLowerCase()}::${String(username).trim().toLowerCase()}`
+);
+
+const hashResetCode = (code) => (
+  crypto.createHash('sha256').update(String(code)).digest('hex')
+);
 
 const normalizeOrigin = (value) => {
   try {
@@ -162,6 +176,85 @@ const login = async (req, res, next) => {
   }
 };
 
+// POST /api/auth/request-reset-code
+const requestResetCode = async (req, res, next) => {
+  try {
+    const { email, username } = req.body;
+
+    if (!email || !username) {
+      return res.status(400).json({ error: 'Email болон хэрэглэгчийн нэр оруулна уу.' });
+    }
+
+    const user = await prisma.user.findFirst({
+      where: {
+        email: String(email).trim(),
+        username: String(username).trim(),
+      },
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: 'Email болон хэрэглэгчийн нэр таарахгүй байна.' });
+    }
+
+    const code = createPasswordResetCode();
+    passwordResetCodes.set(getPasswordResetKey(email, username), {
+      codeHash: hashResetCode(code),
+      expiresAt: Date.now() + PASSWORD_RESET_CODE_TTL_MS,
+    });
+
+    await sendPasswordResetCode({ to: user.email, code });
+
+    res.json({ message: 'Нууц үг сэргээх код email рүү илгээгдлээ.' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// POST /api/auth/reset-password
+const resetPassword = async (req, res, next) => {
+  try {
+    const { email, username, code, password } = req.body;
+
+    if (!email || !username || !code || !password || password.length < 6) {
+      return res.status(400).json({ error: 'Email, хэрэглэгчийн нэр, code, 6-аас дээш тэмдэгттэй шинэ нууц үг оруулна уу.' });
+    }
+
+    const resetKey = getPasswordResetKey(email, username);
+    const resetRecord = passwordResetCodes.get(resetKey);
+
+    if (!resetRecord || resetRecord.expiresAt < Date.now()) {
+      passwordResetCodes.delete(resetKey);
+      return res.status(400).json({ error: 'Код хүчингүй эсвэл хугацаа дууссан байна.' });
+    }
+
+    if (resetRecord.codeHash !== hashResetCode(code)) {
+      return res.status(400).json({ error: 'Код буруу байна.' });
+    }
+
+    const user = await prisma.user.findFirst({
+      where: {
+        email: String(email).trim(),
+        username: String(username).trim(),
+      },
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: 'Email болон хэрэглэгчийн нэр таарахгүй байна.' });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 12);
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { password: hashedPassword },
+    });
+    passwordResetCodes.delete(resetKey);
+
+    res.json({ message: 'Нууц үг амжилттай шинэчлэгдлээ.' });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // ─── GET /api/auth/google ─────────────────────────────────────────
 const googleStart = (req, res) => {
   const { GOOGLE_CLIENT_ID } = process.env;
@@ -295,4 +388,4 @@ const updateProfile = async (req, res, next) => {
   }
 };
 
-module.exports = { register, login, googleStart, googleCallback, getProfile, updateProfile };
+module.exports = { register, login, requestResetCode, resetPassword, googleStart, googleCallback, getProfile, updateProfile };

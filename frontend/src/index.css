@@ -439,6 +439,29 @@ textarea {
   background-color: transparent !important;
 }
 
+.landing-feature-card,
+.landing-feature-card h3,
+.landing-feature-card p,
+.landing-feature-card span,
+.landing-feature-card div {
+  color: #ffffff !important;
+}
+
+.landing-feature-card [class*="bg-white/20"],
+.landing-feature-card [class*="bg-white/18"],
+.landing-feature-card [class*="bg-white/12"] {
+  background-color: rgba(255, 255, 255, 0.18) !important;
+}
+
+.landing-feature-card [class*="bg-emerald-300"],
+.landing-feature-card [class*="bg-emerald-400"] {
+  background-color: #86efac !important;
+}
+
+.landing-feature-card [class*="text-slate-950"] {
+  color: #172033 !important;
+}
+
 .group:hover .lesson-media-overlay {
   background-color: rgba(15, 23, 42, 0.18) !important;
 }
